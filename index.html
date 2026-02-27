@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>美乐蒂识字大冒险</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="game-container">
+        <!-- 开场动画 -->
+        <div id="intro-screen" class="screen active">
+            <div class="intro-content">
+                <h1 class="game-title">🌸 美乐蒂识字大冒险 🌸</h1>
+                <div class="intro-story">
+                    <p>在很远的地方，有一个神奇的<strong>字宝宝王国</strong>...</p>
+                    <p>可是有一天，一场大雾把王国笼罩，</p>
+                    <p>所有的<strong>字宝宝</strong>都迷路了！😢</p>
+                    <br>
+                    <p>美乐蒂需要一位<strong>小小英雄</strong>的帮助，</p>
+                    <p>一起寻找字宝宝，送它们回家！</p>
+                    <br>
+                    <p class="highlight">你愿意帮助美乐蒂吗？</p>
+                </div>
+                <button class="btn-start-adventure" id="btn-start-adventure">
+                    ✨ 开始冒险 ✨
+                </button>
+            </div>
+        </div>
+
+        <!-- 游戏地图 -->
+        <div id="map-screen" class="screen">
+            <!-- 顶部栏 -->
+            <div class="top-bar">
+                <div class="adventure-day">
+                    <span class="icon">📅</span>
+                    <span id="adventure-day-text">第 1 天</span>
+                </div>
+                <div class="love-points">
+                    <span class="icon">💖</span>
+                    <span id="love-points-text">0</span>
+                </div>
+            </div>
+
+            <!-- 地图区域 -->
+            <div class="map-area">
+                <div class="map-title">🏰 字宝宝王国</div>
+
+                <!-- 动态路径 Canvas -->
+                <canvas id="path-canvas" class="path-canvas"></canvas>
+
+                <!-- 岛屿 1：花花岛 -->
+                <div class="island" data-island="1" id="island-1">
+                    <div class="island-sprite">🌸</div>
+                    <div class="island-name">花花岛</div>
+                    <div class="island-progress" id="island-1-progress">0/5</div>
+                    <div class="island-lock" id="island-1-lock">🔒</div>
+                </div>
+
+                <!-- 岛屿 2：泡泡海 -->
+                <div class="island" data-island="2" id="island-2">
+                    <div class="island-sprite">🫧</div>
+                    <div class="island-name">泡泡海</div>
+                    <div class="island-progress" id="island-2-progress">0/5</div>
+                    <div class="island-lock" id="island-2-lock">🔒</div>
+                </div>
+
+                <!-- 岛屿 3：星星山 -->
+                <div class="island" data-island="3" id="island-3">
+                    <div class="island-sprite">⭐</div>
+                    <div class="island-name">星星山</div>
+                    <div class="island-progress" id="island-3-progress">0/5</div>
+                    <div class="island-lock" id="island-3-lock">🔒</div>
+                </div>
+
+                <!-- 岛屿 4：拼图森林 -->
+                <div class="island" data-island="4" id="island-4">
+                    <div class="island-sprite">🧩</div>
+                    <div class="island-name">拼图森林</div>
+                    <div class="island-progress" id="island-4-progress">0/5</div>
+                    <div class="island-lock" id="island-4-lock">🔒</div>
+                </div>
+
+                <!-- 岛屿 5：月光城堡 -->
+                <div class="island boss-island" data-island="5" id="island-5">
+                    <div class="island-sprite">🌙</div>
+                    <div class="island-name">月光城堡</div>
+                    <div class="island-progress" id="island-5-progress">0/5</div>
+                    <div class="island-lock" id="island-5-lock">🔒</div>
+                </div>
+
+                <!-- 装饰元素：云朵 -->
+                <div class="cloud cloud-1">☁️</div>
+                <div class="cloud cloud-2">☁️</div>
+                <div class="cloud cloud-3">☁️</div>
+
+                <!-- 装饰元素：小鸟 -->
+                <div class="bird">🐦</div>
+            </div>
+
+            <!-- 美乐蒂对话框 -->
+            <div class="merody-dialogue">
+                <div class="merody-avatar">🎀</div>
+                <div class="dialogue-bubble" id="map-dialogue">
+                    小小英雄，快来帮我找字宝宝吧！
+                </div>
+            </div>
+
+            <!-- 底部按钮 -->
+            <div class="bottom-buttons">
+                <button class="btn-castle" id="btn-castle">
+                    🏰 字宝宝城堡
+                </button>
+                <button class="btn-backpack" id="btn-backpack">
+                    🎒 我的背包
+                </button>
+            </div>
+        </div>
+
+        <!-- 关卡界面 -->
+        <div id="level-screen" class="screen">
+            <div class="level-header">
+                <button class="btn-back-map" id="btn-back-map">← 地图</button>
+                <h2 id="level-title">花花岛</h2>
+            </div>
+
+            <!-- 美乐蒂讲故事 -->
+            <div class="level-story" id="level-story">
+                <div class="merody-avatar big">🎀</div>
+                <div class="story-text" id="story-text"></div>
+                <button class="btn-start-level" id="btn-start-level">
+                    🎮 出发找字宝宝！
+                </button>
+            </div>
+
+            <!-- 游戏选择 -->
+            <div class="game-type-select" id="game-type-select" style="display: none;">
+                <h3 class="select-title">选择游戏</h3>
+                <div class="game-type-cards">
+                    <div class="game-type-card" data-type="hide-seek">
+                        <div class="type-icon">🙈</div>
+                        <h4>捉迷藏</h4>
+                        <p>找出藏起来的字宝宝</p>
+                    </div>
+                    <div class="game-type-card" data-type="bubble">
+                        <div class="type-icon">🫧</div>
+                        <h4>泡泡消除</h4>
+                        <p>戳破字宝宝泡泡</p>
+                    </div>
+                    <div class="game-type-card" data-type="puzzle">
+                        <div class="type-icon">🧩</div>
+                        <h4>拼图识字</h4>
+                        <p>拼出完整的字</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 游戏区域 -->
+            <div class="game-area" id="game-area" style="display: none;">
+                <div class="game-header">
+                    <button class="btn-back-game" id="btn-back-game">← 返回</button>
+                    <div class="game-progress">
+                        <span>找到字宝宝：</span>
+                        <span id="game-progress-text">0/3</span>
+                    </div>
+                </div>
+                <div class="game-instruction" id="game-instruction"></div>
+                <div class="game-content" id="game-content"></div>
+                <canvas id="game-canvas" class="game-canvas"></canvas>
+            </div>
+        </div>
+
+        <!-- 字宝宝城堡 -->
+        <div id="castle-screen" class="screen">
+            <div class="castle-header">
+                <button class="btn-back-map" id="btn-back-castle">← 返回</button>
+                <h2>🏰 字宝宝城堡</h2>
+            </div>
+
+            <div class="castle-content">
+                <!-- 城堡外观 -->
+                <div class="castle-view">
+                    <div class="castle-sprite">🏰</div>
+                    <div class="castle-info">
+                        <p>已经住了 <span id="castle-count">0</span> 个字宝宝</p>
+                    </div>
+                    <!-- 城堡装饰 -->
+                    <div class="castle-decorations" id="castle-decorations"></div>
+                </div>
+
+                <!-- 字宝宝列表 -->
+                <div class="castle-words">
+                    <h3>字宝宝居民</h3>
+                    <div class="words-grid" id="castle-words-grid"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 背包界面 -->
+        <div id="backpack-screen" class="screen">
+            <div class="backpack-header">
+                <button class="btn-back-map" id="btn-back-backpack">← 返回</button>
+                <h2>🎒 我的背包</h2>
+            </div>
+
+            <div class="backpack-content">
+                <div class="treasure-section">
+                    <h3>💝 爱心</h3>
+                    <div class="love-display">
+                        <span class="love-icon">💖</span>
+                        <span class="love-count" id="backpack-love">0</span>
+                    </div>
+                    <p class="love-desc">用爱心可以购买城堡装饰哦！</p>
+                    <button class="btn-shop" id="btn-shop">🏪 去商店</button>
+                </div>
+
+                <div class="stickers-section">
+                    <h3>🎨 收集的贴纸</h3>
+                    <div class="stickers-grid" id="stickers-grid"></div>
+                </div>
+
+                <div class="achievements-section">
+                    <h3>🏆 冒险记录</h3>
+                    <div class="adventure-stats">
+                        <div class="stat-row">
+                            <span>冒险天数</span>
+                            <span id="stat-adventure-days">0</span>
+                        </div>
+                        <div class="stat-row">
+                            <span>找到的字宝宝</span>
+                            <span id="stat-words-found">0</span>
+                        </div>
+                        <div class="stat-row">
+                            <span>探索的岛屿</span>
+                            <span id="stat-islands-explored">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 商店界面 -->
+        <div id="shop-screen" class="screen">
+            <div class="shop-header">
+                <button class="btn-back-map" id="btn-back-shop">← 返回</button>
+                <h2>🏪 魔法商店</h2>
+            </div>
+
+            <div class="shop-content">
+                <div class="shop-love">
+                    <span>💖</span>
+                    <span id="shop-love-points">0</span>
+                </div>
+
+                <div class="shop-items">
+                    <h3>城堡装饰</h3>
+                    <div class="shop-grid" id="shop-grid">
+                        <!-- 由 JS 生成 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 找到字宝宝庆祝 -->
+        <div id="found-screen" class="screen-overlay" style="display: none;">
+            <div class="found-content">
+                <div class="found-animation">
+                    <div class="word-bubble" id="found-word-bubble">
+                        <span class="found-char" id="found-char"></span>
+                    </div>
+                </div>
+                <h2 class="found-title">找到啦！🎉</h2>
+                <p class="found-message" id="found-message"></p>
+                <div class="found-reward">
+                    <span class="reward-heart">💖</span>
+                    <span class="reward-text">+3 爱心</span>
+                </div>
+                <button class="btn-send-home" id="btn-send-home">
+                    🏠 送字宝宝回家
+                </button>
+            </div>
+        </div>
+
+        <!-- 每日登录奖励 -->
+        <div id="daily-reward-screen" class="screen">
+            <div class="daily-reward-content">
+                <h2>🎁 每日惊喜</h2>
+                <div class="gift-box" id="gift-box">
+                    <span class="gift-icon">🎀</span>
+                </div>
+                <p class="daily-message">美乐蒂给你准备了小礼物！</p>
+                <button class="btn-open-gift" id="btn-open-gift">
+                    打开礼物
+                </button>
+            </div>
+        </div>
+
+        <!-- 升级提示 -->
+        <div id="levelup-toast" class="toast">
+            <span class="toast-icon">🎉</span>
+            <span class="toast-message">解锁新岛屿！</span>
+        </div>
+    </div>
+
+    <!-- 引入游戏数据 -->
+    <script src="data/wordData.js"></script>
+    <!-- 引入游戏主逻辑 -->
+    <script src="src/game.js"></script>
+</body>
+</html>

@@ -1,0 +1,1305 @@
+/* 美乐蒂识字大冒险 - 游戏化样式 */
+/* 粉色系主题，适配 iPad */
+
+:root {
+    --pink-light: #FFE4E1;
+    --pink-medium: #FFB6C1;
+    --pink-dark: #FF69B4;
+    --pink-soft: #FFC0CB;
+    --purple-soft: #DDA0DD;
+    --green-soft: #98FB98;
+    --blue-soft: #87CEEB;
+    --white: #FFFFFF;
+    --text-dark: #4A4A4A;
+    --text-light: #888888;
+    --shadow: rgba(255, 105, 180, 0.3);
+    --gold: #FFD700;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    font-family: 'ZCOOL KuaiLe', cursive, sans-serif;
+    background: linear-gradient(135deg, #FFE4E1 0%, #FFC0CB 50%, #DDA0DD 100%);
+    min-height: 100vh;
+    color: var(--text-dark);
+    overflow-x: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+#game-container {
+    max-width: 1024px;
+    margin: 0 auto;
+    padding: 15px;
+    min-height: 100vh;
+}
+
+/* 屏幕切换 */
+.screen {
+    display: none;
+    animation: fadeIn 0.4s ease;
+}
+
+.screen.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ==================== 开场动画 ==================== */
+#intro-screen {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.intro-content {
+    background: var(--white);
+    border-radius: 30px;
+    padding: 40px 30px;
+    box-shadow: 0 8px 30px var(--shadow);
+    border: 5px solid var(--pink-medium);
+}
+
+.game-title {
+    font-size: 2.5rem;
+    color: var(--pink-dark);
+    margin-bottom: 30px;
+    text-shadow: 2px 2px 4px var(--shadow);
+    animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+.intro-story {
+    font-size: 1.3rem;
+    line-height: 2;
+    color: var(--text-dark);
+    margin-bottom: 30px;
+    text-align: left;
+    background: var(--pink-light);
+    padding: 25px;
+    border-radius: 20px;
+}
+
+.intro-story p {
+    margin-bottom: 10px;
+}
+
+.intro-story strong {
+    color: var(--pink-dark);
+    font-size: 1.1em;
+}
+
+.intro-story .highlight {
+    text-align: center;
+    font-size: 1.5rem;
+    color: var(--pink-dark);
+    margin-top: 20px;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.btn-start-adventure {
+    background: linear-gradient(135deg, var(--pink-dark), var(--pink-medium));
+    color: var(--white);
+    border: none;
+    padding: 20px 50px;
+    font-size: 1.8rem;
+    border-radius: 50px;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: 0 6px 20px var(--shadow);
+    transition: all 0.3s ease;
+    animation: glow 2s infinite;
+}
+
+@keyframes glow {
+    0%, 100% { box-shadow: 0 6px 20px var(--shadow); }
+    50% { box-shadow: 0 6px 30px rgba(255, 105, 180, 0.6); }
+}
+
+.btn-start-adventure:active {
+    transform: scale(0.95);
+}
+
+/* ==================== 地图界面 ==================== */
+.top-bar {
+    display: flex;
+    justify-content: space-between;
+    padding: 15px 20px;
+    background: var(--white);
+    border-radius: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 15px var(--shadow);
+}
+
+.adventure-day, .love-points {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.3rem;
+}
+
+.adventure-day .icon, .love-points .icon {
+    font-size: 1.8rem;
+}
+
+.map-area {
+    position: relative;
+    background: linear-gradient(180deg, #87CEEB 0%, #E0F7FA 100%);
+    border-radius: 25px;
+    padding: 30px 20px;
+    min-height: 500px;
+    overflow: hidden;
+    box-shadow: 0 8px 30px var(--shadow);
+    border: 5px solid var(--white);
+    /* 使用flex布局让岛屿自适应 */
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-content: flex-start;
+    gap: 30px;
+    padding-top: 80px;
+}
+
+.map-title {
+    text-align: center;
+    font-size: 1.8rem;
+    color: var(--pink-dark);
+    margin-bottom: 20px;
+}
+
+.path-svg {
+    position: absolute;
+    top: 80px;
+    left: 0;
+    width: 100%;
+    height: 200px;
+    pointer-events: none;
+}
+
+.path-line {
+    fill: none;
+    stroke: var(--pink-medium);
+    stroke-width: 8;
+    stroke-dasharray: 20, 10;
+    animation: dash 3s linear infinite;
+}
+
+@keyframes dash {
+    to { stroke-dashoffset: -30; }
+}
+
+.island {
+    position: relative;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    z-index: 10;
+    flex: 0 0 auto;
+    width: 120px;
+}
+
+.island:active {
+    transform: scale(0.9);
+}
+
+.island.locked {
+    filter: grayscale(0.8);
+    opacity: 0.6;
+}
+
+.island-sprite {
+    font-size: 4rem;
+    filter: drop-shadow(0 4px 8px var(--shadow));
+    animation: islandFloat 3s ease-in-out infinite;
+}
+
+@keyframes islandFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+
+.island-name {
+    font-size: 1.2rem;
+    color: var(--text-dark);
+    background: var(--white);
+    padding: 5px 15px;
+    border-radius: 15px;
+    margin-top: 5px;
+    box-shadow: 0 2px 10px var(--shadow);
+}
+
+.island-progress {
+    font-size: 0.9rem;
+    color: var(--pink-dark);
+    background: var(--pink-light);
+    padding: 3px 10px;
+    border-radius: 10px;
+    margin-top: 5px;
+}
+
+.island-lock {
+    font-size: 2rem;
+    position: absolute;
+    top: 0;
+    right: -10px;
+    filter: drop-shadow(0 2px 4px var(--shadow));
+}
+
+/* 岛屿位置 - 使用flex布局后不需要固定位置 */
+#island-1 { order: 1; }
+#island-2 { order: 2; }
+#island-3 { order: 3; }
+#island-4 { order: 4; }
+#island-5 { order: 5; }
+
+.boss-island .island-sprite {
+    font-size: 5rem;
+}
+
+/* 美乐蒂对话框 */
+.merody-dialogue {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-top: 20px;
+    background: var(--white);
+    padding: 20px;
+    border-radius: 25px;
+    box-shadow: 0 4px 15px var(--shadow);
+}
+
+.merody-avatar {
+    font-size: 3.5rem;
+    animation: bounce 2s infinite;
+}
+
+.merody-avatar.big {
+    font-size: 6rem;
+    filter: drop-shadow(0 4px 10px var(--shadow));
+}
+
+.dialogue-bubble {
+    flex: 1;
+    background: var(--pink-light);
+    padding: 15px 25px;
+    border-radius: 20px;
+    font-size: 1.2rem;
+    position: relative;
+    color: var(--text-dark);
+}
+
+.dialogue-bubble::before {
+    content: '';
+    position: absolute;
+    left: -12px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 12px solid transparent;
+    border-right-color: var(--pink-light);
+}
+
+/* 底部按钮 */
+.bottom-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.btn-castle, .btn-backpack {
+    background: var(--white);
+    border: none;
+    padding: 18px 25px;
+    font-size: 1.3rem;
+    border-radius: 20px;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: 0 4px 15px var(--shadow);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.btn-castle:active, .btn-backpack:active {
+    transform: scale(0.95);
+}
+
+/* ==================== 关卡界面 ==================== */
+.level-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.btn-back-map {
+    background: var(--white);
+    border: none;
+    padding: 12px 20px;
+    border-radius: 15px;
+    font-size: 1.2rem;
+    color: var(--pink-dark);
+    cursor: pointer;
+    box-shadow: 0 2px 10px var(--shadow);
+    font-family: inherit;
+}
+
+.level-header h2 {
+    flex: 1;
+    font-size: 1.8rem;
+    color: var(--pink-dark);
+    text-align: center;
+    margin-right: 60px;
+}
+
+.level-story {
+    background: var(--white);
+    border-radius: 25px;
+    padding: 30px;
+    text-align: center;
+    box-shadow: 0 4px 20px var(--shadow);
+}
+
+.story-text {
+    font-size: 1.4rem;
+    line-height: 2;
+    color: var(--text-dark);
+    margin: 20px 0 30px;
+    background: var(--pink-light);
+    padding: 25px;
+    border-radius: 20px;
+}
+
+.btn-start-level {
+    background: linear-gradient(135deg, var(--pink-dark), var(--pink-medium));
+    color: var(--white);
+    border: none;
+    padding: 18px 40px;
+    font-size: 1.5rem;
+    border-radius: 40px;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: 0 6px 20px var(--shadow);
+    transition: all 0.3s ease;
+}
+
+.btn-start-level:active {
+    transform: scale(0.95);
+}
+
+.game-area {
+    background: var(--white);
+    border-radius: 25px;
+    padding: 30px;
+    box-shadow: 0 4px 20px var(--shadow);
+    min-height: 500px;
+}
+
+.game-instruction {
+    text-align: center;
+    font-size: 1.4rem;
+    color: var(--text-dark);
+    margin-bottom: 30px;
+    background: var(--pink-light);
+    padding: 20px;
+    border-radius: 20px;
+}
+
+.game-content {
+    min-height: 350px;
+    position: relative;
+}
+
+/* ==================== 游戏内卡片 ==================== */
+.game-card-large {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--pink-light), var(--pink-soft));
+    border-radius: 25px;
+    padding: 30px;
+    margin: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px var(--shadow);
+    min-width: 150px;
+}
+
+.game-card-large:active {
+    transform: scale(0.9);
+}
+
+.game-card-large .char {
+    font-size: 5rem;
+    color: var(--pink-dark);
+    display: block;
+}
+
+/* ==================== 城堡界面 ==================== */
+.castle-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.castle-header h2 {
+    flex: 1;
+    font-size: 1.8rem;
+    color: var(--pink-dark);
+    text-align: center;
+    margin-right: 60px;
+}
+
+.castle-content {
+    background: var(--white);
+    border-radius: 25px;
+    padding: 30px;
+    box-shadow: 0 4px 20px var(--shadow);
+}
+
+.castle-view {
+    text-align: center;
+    padding: 30px;
+    background: linear-gradient(180deg, #E0F7FA 0%, var(--white) 100%);
+    border-radius: 20px;
+    margin-bottom: 30px;
+}
+
+.castle-sprite {
+    font-size: 8rem;
+    animation: castleGlow 2s infinite;
+}
+
+@keyframes castleGlow {
+    0%, 100% { filter: drop-shadow(0 0 10px var(--pink-medium)); }
+    50% { filter: drop-shadow(0 0 20px var(--pink-dark)); }
+}
+
+.castle-info {
+    font-size: 1.3rem;
+    color: var(--text-dark);
+    margin-top: 15px;
+}
+
+.decoration-area h3, .castle-words h3 {
+    font-size: 1.5rem;
+    color: var(--pink-dark);
+    margin: 20px 0 15px;
+    text-align: center;
+}
+
+.decorations-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 15px;
+}
+
+.decoration-item {
+    aspect-ratio: 1;
+    background: var(--pink-light);
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.decoration-item:active {
+    transform: scale(0.9);
+}
+
+.words-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    gap: 12px;
+}
+
+.castle-word-card {
+    aspect-ratio: 1;
+    background: linear-gradient(135deg, var(--pink-light), var(--pink-soft));
+    border-radius: 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px var(--shadow);
+}
+
+.castle-word-card:active {
+    transform: scale(0.9);
+}
+
+.castle-word-card .char {
+    font-size: 2.5rem;
+    color: var(--pink-dark);
+}
+
+.castle-word-card .pinyin {
+    font-size: 0.8rem;
+    color: var(--text-dark);
+}
+
+/* ==================== 背包界面 ==================== */
+.backpack-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.backpack-header h2 {
+    flex: 1;
+    font-size: 1.8rem;
+    color: var(--pink-dark);
+    text-align: center;
+    margin-right: 60px;
+}
+
+.backpack-content {
+    background: var(--white);
+    border-radius: 25px;
+    padding: 30px;
+    box-shadow: 0 4px 20px var(--shadow);
+}
+
+.treasure-section, .stickers-section, .achievements-section {
+    margin-bottom: 30px;
+}
+
+.treasure-section h3, .stickers-section h3, .achievements-section h3 {
+    font-size: 1.5rem;
+    color: var(--pink-dark);
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.love-display {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    background: var(--pink-light);
+    padding: 25px;
+    border-radius: 20px;
+    margin-bottom: 15px;
+}
+
+.love-icon {
+    font-size: 3rem;
+    animation: heartbeat 1s infinite;
+}
+
+@keyframes heartbeat {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+}
+
+.love-count {
+    font-size: 3rem;
+    color: var(--pink-dark);
+    font-weight: bold;
+}
+
+.love-desc {
+    text-align: center;
+    color: var(--text-light);
+    font-size: 1.1rem;
+}
+
+.stickers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    gap: 12px;
+}
+
+.sticker-item {
+    aspect-ratio: 1;
+    background: var(--pink-light);
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    opacity: 0.5;
+}
+
+.sticker-item.collected {
+    opacity: 1;
+    background: linear-gradient(135deg, var(--gold), var(--pink-medium));
+    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+}
+
+.adventure-stats {
+    background: var(--pink-light);
+    padding: 20px;
+    border-radius: 20px;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 15px 0;
+    border-bottom: 1px dashed var(--pink-medium);
+    font-size: 1.2rem;
+}
+
+.stat-row:last-child {
+    border-bottom: none;
+}
+
+.stat-row span:last-child {
+    color: var(--pink-dark);
+    font-weight: bold;
+}
+
+/* ==================== 找到字宝宝界面 ==================== */
+.found-animation {
+    margin-bottom: 30px;
+}
+
+.word-bubble {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--pink-dark), var(--pink-medium));
+    border-radius: 50%;
+    width: 180px;
+    height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: wordCelebrate 0.5s infinite alternate;
+}
+
+@keyframes wordCelebrate {
+    from { transform: scale(1) rotate(-5deg); }
+    to { transform: scale(1.1) rotate(5deg); }
+}
+
+.found-char {
+    font-size: 6rem;
+    color: var(--white);
+}
+
+.found-title {
+    font-size: 2.5rem;
+    color: var(--pink-dark);
+    margin-bottom: 15px;
+}
+
+.found-message {
+    font-size: 1.3rem;
+    color: var(--text-dark);
+    margin-bottom: 25px;
+}
+
+.found-reward {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    font-size: 1.5rem;
+    background: var(--pink-light);
+    padding: 15px 30px;
+    border-radius: 25px;
+    margin-bottom: 30px;
+}
+
+.reward-heart {
+    font-size: 2.5rem;
+    animation: heartbeat 1s infinite;
+}
+
+.btn-send-home {
+    background: linear-gradient(135deg, var(--pink-dark), var(--pink-medium));
+    color: var(--white);
+    border: none;
+    padding: 18px 50px;
+    font-size: 1.5rem;
+    border-radius: 40px;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: 0 6px 20px var(--shadow);
+    transition: all 0.3s ease;
+}
+
+.btn-send-home:active {
+    transform: scale(0.95);
+}
+
+/* ==================== 每日奖励界面 ==================== */
+.daily-reward-content {
+    text-align: center;
+    padding: 50px 20px;
+}
+
+.daily-reward-content h2 {
+    font-size: 2.5rem;
+    color: var(--pink-dark);
+    margin-bottom: 30px;
+}
+
+.gift-box {
+    font-size: 10rem;
+    animation: giftShake 1s infinite;
+    cursor: pointer;
+    display: inline-block;
+}
+
+@keyframes giftShake {
+    0%, 100% { transform: rotate(-5deg); }
+    50% { transform: rotate(5deg); }
+}
+
+.daily-message {
+    font-size: 1.4rem;
+    color: var(--text-dark);
+    margin: 20px 0 30px;
+}
+
+.btn-open-gift {
+    background: linear-gradient(135deg, var(--pink-dark), var(--pink-medium));
+    color: var(--white);
+    border: none;
+    padding: 18px 50px;
+    font-size: 1.5rem;
+    border-radius: 40px;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: 0 6px 20px var(--shadow);
+    transition: all 0.3s ease;
+}
+
+.btn-open-gift:active {
+    transform: scale(0.95);
+}
+
+/* ==================== iPad 适配 ==================== */
+@media (min-width: 768px) {
+    .game-title {
+        font-size: 3.5rem;
+    }
+
+    .intro-story {
+        font-size: 1.5rem;
+    }
+
+    .map-area {
+        gap: 50px;
+        padding-top: 100px;
+    }
+}
+
+@media (max-width: 600px) {
+    .map-area {
+        min-height: 500px;
+        gap: 20px;
+        padding-top: 60px;
+    }
+
+    .island {
+        width: 100px;
+    }
+
+    .level-header h2,
+    .castle-header h2,
+    .backpack-header h2 {
+        font-size: 1.4rem;
+    }
+
+    .game-type-cards {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ==================== Canvas 元素 ==================== */
+.path-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 5;
+}
+
+.game-canvas {
+    width: 100%;
+    height: 400px;
+    background: linear-gradient(180deg, #E0F7FA 0%, #FFFFFF 100%);
+    border-radius: 20px;
+    margin-top: 20px;
+}
+
+/* ==================== 云朵装饰 ==================== */
+.cloud {
+    position: absolute;
+    font-size: 3rem;
+    opacity: 0.8;
+    animation: cloudFloat 20s linear infinite;
+    z-index: 1;
+}
+
+.cloud-1 { top: 30px; left: -50px; animation-duration: 25s; }
+.cloud-2 { top: 60px; left: -50px; animation-duration: 30s; animation-delay: 5s; }
+.cloud-3 { top: 20px; left: -50px; animation-duration: 28s; animation-delay: 10s; }
+
+@keyframes cloudFloat {
+    from { transform: translateX(0); }
+    to { transform: translateX(calc(100vw + 100px)); }
+}
+
+/* ==================== 小鸟装饰 ==================== */
+.bird {
+    position: absolute;
+    font-size: 2rem;
+    animation: birdFly 15s ease-in-out infinite;
+    z-index: 2;
+}
+
+@keyframes birdFly {
+    0% { top: 50px; left: -30px; }
+    25% { top: 30px; left: 25%; }
+    50% { top: 60px; left: 50%; }
+    75% { top: 40px; left: 75%; }
+    100% { top: 50px; left: calc(100% + 30px); }
+}
+
+/* ==================== 游戏选择卡片 ==================== */
+.game-type-select {
+    padding: 30px;
+}
+
+.select-title {
+    text-align: center;
+    font-size: 1.5rem;
+    color: var(--pink-dark);
+    margin-bottom: 25px;
+}
+
+.game-type-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+.game-type-card {
+    background: linear-gradient(135deg, var(--pink-light), var(--white));
+    border: 3px solid var(--pink-medium);
+    border-radius: 20px;
+    padding: 25px 15px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px var(--shadow);
+}
+
+.game-type-card:active {
+    transform: scale(0.95);
+}
+
+.game-type-card.selected {
+    border-color: var(--pink-dark);
+    background: linear-gradient(135deg, var(--pink-medium), var(--pink-light));
+}
+
+.type-icon {
+    font-size: 3.5rem;
+    margin-bottom: 10px;
+}
+
+.game-type-card h4 {
+    font-size: 1.2rem;
+    color: var(--pink-dark);
+    margin-bottom: 8px;
+}
+
+.game-type-card p {
+    font-size: 0.9rem;
+    color: var(--text-light);
+}
+
+/* ==================== 游戏头部 ==================== */
+.game-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.btn-back-game {
+    background: var(--white);
+    border: none;
+    padding: 10px 20px;
+    border-radius: 15px;
+    font-size: 1.1rem;
+    color: var(--pink-dark);
+    cursor: pointer;
+    box-shadow: 0 2px 10px var(--shadow);
+    font-family: inherit;
+}
+
+.game-progress {
+    font-size: 1.2rem;
+    color: var(--text-dark);
+    background: var(--pink-light);
+    padding: 10px 20px;
+    border-radius: 15px;
+}
+
+#game-progress-text {
+    color: var(--pink-dark);
+    font-weight: bold;
+}
+
+/* ==================== 泡泡游戏 ==================== */
+.bubble-item {
+    position: absolute;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.2s;
+    animation: bubbleFloat 3s ease-in-out infinite;
+}
+
+.bubble-item:active {
+    transform: scale(0.9);
+}
+
+@keyframes bubbleFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-15px); }
+}
+
+/* ==================== 拼图游戏 ==================== */
+.puzzle-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.puzzle-pieces {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.puzzle-piece {
+    width: 100px;
+    height: 100px;
+    background: linear-gradient(135deg, var(--pink-medium), var(--pink-light));
+    border: 3px solid var(--pink-dark);
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    color: var(--pink-dark);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px var(--shadow);
+}
+
+.puzzle-piece:active {
+    transform: scale(0.95);
+}
+
+.puzzle-piece.selected {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px var(--shadow);
+}
+
+.puzzle-piece.placed {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.puzzle-board {
+    width: 220px;
+    height: 120px;
+    border: 4px dashed var(--pink-medium);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: var(--pink-light);
+}
+
+.puzzle-slot {
+    width: 90px;
+    height: 100px;
+    border: 3px dashed var(--pink-dark);
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    color: var(--pink-dark);
+}
+
+/* ==================== 商店界面 ==================== */
+.shop-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.shop-header h2 {
+    flex: 1;
+    font-size: 1.8rem;
+    color: var(--pink-dark);
+    text-align: center;
+    margin-right: 60px;
+}
+
+.shop-content {
+    background: var(--white);
+    border-radius: 25px;
+    padding: 30px;
+    box-shadow: 0 4px 20px var(--shadow);
+}
+
+.shop-love {
+    text-align: center;
+    font-size: 2rem;
+    color: var(--pink-dark);
+    padding: 20px;
+    background: var(--pink-light);
+    border-radius: 20px;
+    margin-bottom: 25px;
+}
+
+.shop-items h3 {
+    font-size: 1.5rem;
+    color: var(--pink-dark);
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.shop-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 20px;
+}
+
+.shop-item {
+    background: var(--pink-light);
+    border-radius: 20px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 3px solid transparent;
+}
+
+.shop-item:active {
+    transform: scale(0.95);
+}
+
+.shop-item.owned {
+    opacity: 0.6;
+    border-color: var(--gold);
+}
+
+.shop-item-icon {
+    font-size: 3.5rem;
+    margin-bottom: 10px;
+}
+
+.shop-item-name {
+    font-size: 1.1rem;
+    color: var(--text-dark);
+    margin-bottom: 8px;
+}
+
+.shop-item-price {
+    font-size: 1.3rem;
+    color: var(--pink-dark);
+    font-weight: bold;
+}
+
+.btn-shop {
+    background: linear-gradient(135deg, var(--pink-dark), var(--pink-medium));
+    color: var(--white);
+    border: none;
+    padding: 15px 30px;
+    font-size: 1.2rem;
+    border-radius: 25px;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: 0 4px 15px var(--shadow);
+    margin-top: 15px;
+    width: 100%;
+}
+
+/* ==================== Toast 提示 ==================== */
+.toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-100px);
+    background: linear-gradient(135deg, var(--pink-dark), var(--pink-medium));
+    color: var(--white);
+    padding: 15px 30px;
+    border-radius: 30px;
+    font-size: 1.3rem;
+    box-shadow: 0 6px 20px var(--shadow);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    opacity: 0;
+    transition: all 0.5s ease;
+}
+
+.toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
+.toast-icon {
+    font-size: 1.8rem;
+    animation: bounce 1s infinite;
+}
+
+/* ==================== 覆盖层（Found Screen） ==================== */
+.screen-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    animation: fadeIn 0.3s ease;
+}
+
+.found-content {
+    text-align: center;
+    padding: 40px 20px;
+    background: var(--white);
+    border-radius: 30px;
+    box-shadow: 0 8px 30px var(--shadow);
+    max-width: 500px;
+    margin: 20px;
+}
+
+/* ==================== 城堡装饰 ==================== */
+.castle-decorations {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+}
+
+.castle-decoration-item {
+    font-size: 2.5rem;
+    animation: decorationGlow 2s infinite;
+}
+
+@keyframes decorationGlow {
+    0%, 100% { filter: drop-shadow(0 0 5px var(--pink-medium)); }
+    50% { filter: drop-shadow(0 0 15px var(--pink-dark)); }
+}
+
+/* ==================== 庆祝动画 ==================== */
+.confetti {
+    position: fixed;
+    width: 12px;
+    height: 12px;
+    animation: fall 3s linear forwards;
+    z-index: 9999;
+}
+
+@keyframes fall {
+    to {
+        transform: translateY(100vh) rotate(720deg);
+        opacity: 0;
+    }
+}
+
+.star-burst {
+    position: fixed;
+    font-size: 3rem;
+    animation: starBurst 1s ease-out forwards;
+    z-index: 9999;
+}
+
+@keyframes starBurst {
+    0% {
+        transform: scale(0) rotate(0deg);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(2) rotate(180deg);
+        opacity: 0;
+    }
+}
+
+/* ==================== 泡泡爆破动画 ==================== */
+.bubble-pop {
+    position: absolute;
+    pointer-events: none;
+    animation: popAnimation 0.5s ease-out forwards;
+}
+
+@keyframes popAnimation {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(2);
+        opacity: 0;
+    }
+}
+
+/* ==================== 字宝宝出现动画 ==================== */
+.word-appear {
+    animation: wordAppear 0.6s ease-out;
+}
+
+@keyframes wordAppear {
+    0% {
+        transform: scale(0) rotate(-180deg);
+        opacity: 0;
+    }
+    60% {
+        transform: scale(1.2) rotate(10deg);
+    }
+    100% {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+    }
+}
