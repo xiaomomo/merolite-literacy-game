@@ -98,6 +98,7 @@ class AdventureGame {
         // 检查是否第一次打开
         if (!this.state.hasStarted) {
             this.showScreen('intro-screen');
+            this.speakLater('在很远的地方，有一个神奇的字宝宝王国。可是有一天，一场大雾把王国笼罩，所有的字宝宝都迷路了！美乐蒂需要一位小小英雄的帮助，一起寻找字宝宝，送它们回家！你愿意帮助美乐蒂吗？点击开始冒险吧！', 500);
         } else {
             this.checkDailyLogin();
             this.showScreen('map-screen');
@@ -191,6 +192,7 @@ class AdventureGame {
     // 显示登录奖励
     showDailyReward() {
         this.showScreen('daily-reward-screen');
+        this.speakLater('每日惊喜！美乐蒂给你准备了小礼物！快点击打开礼物吧！', 300);
     }
 
     // 打开礼物
@@ -219,7 +221,9 @@ class AdventureGame {
                 this.showScreen('map-screen');
                 this.updateMap();
                 this.animatePath();
+                this.speakLater('这是冒险地图，选择一个岛屿开始冒险吧！', 300);
             });
+            this.speakLater(`美乐蒂送给你${loveReward}颗爱心，还有一张贴纸！`, 200);
         }, 1000);
     }
 
@@ -229,6 +233,7 @@ class AdventureGame {
         document.getElementById('btn-start-adventure').addEventListener('click', () => {
             this.state.hasStarted = true;
             this.saveState();
+            this.speak('出发！');
             this.checkDailyLogin();
             this.showScreen('map-screen');
             this.updateMap();
@@ -366,6 +371,7 @@ class AdventureGame {
         const toast = document.getElementById('levelup-toast');
         toast.querySelector('.toast-message').textContent = message;
         toast.classList.add('show');
+        this.speakLater(message, 200);
         setTimeout(() => {
             toast.classList.remove('show');
         }, 3000);
@@ -383,6 +389,7 @@ class AdventureGame {
 
         const dialogue = dialogues[Math.floor(Math.random() * dialogues.length)];
         document.getElementById('map-dialogue').textContent = dialogue;
+        this.speakLater(dialogue, 400);
     }
 
     // 绘制路径动画
@@ -422,6 +429,7 @@ class AdventureGame {
                     message: '先完成前面的岛屿吧！<br>字宝宝们需要你的帮助～',
                     buttons: [{ text: '好的', value: true, primary: true }]
                 });
+                this.speakLater('先完成前面的岛屿吧！字宝宝们需要你的帮助！', 200);
                 return;
             }
         }
@@ -441,6 +449,8 @@ class AdventureGame {
             this.state.visitedIslands.push(islandId);
             this.saveState();
         }
+
+        this.speakLater(islandData.story.replace(/\n/g, '') + ' 点击出发找字宝宝！', 300);
     }
 
     // 显示游戏类型选择
@@ -450,10 +460,11 @@ class AdventureGame {
         const selectEl = document.getElementById('game-type-select');
         selectEl.style.display = 'block';
 
-        // 重置选择状态
         document.querySelectorAll('.game-type-card').forEach(card => {
             card.classList.remove('selected');
         });
+
+        this.speakLater('选择你喜欢的游戏吧！捉迷藏，泡泡消除，还是拼图识字？', 300);
     }
 
     // 选择游戏类型
@@ -465,7 +476,9 @@ class AdventureGame {
         });
         document.querySelector(`[data-type="${type}"]`).classList.add('selected');
 
-        // 开始游戏
+        const names = { 'hide-seek': '捉迷藏', 'bubble': '泡泡消除', 'puzzle': '拼图识字' };
+        this.speak(`好的，玩${names[type]}！`);
+
         setTimeout(() => {
             this.startLevel();
         }, 300);
@@ -530,6 +543,7 @@ class AdventureGame {
         this.currentWords = availableWords.slice(0, wordsToPlay);
 
         if (this.currentWords.length === 0) {
+            this.speakLater('哇！所有的字宝宝都被你找到啦！美乐蒂说，你真是太厉害了！', 200);
             this.showGameModal({
                 icon: '🎊',
                 message: '哇！所有的字宝宝都被你找到啦！<br><br>美乐蒂说："你真是太厉害了！"',
@@ -813,15 +827,15 @@ class AdventureGame {
 
     // 显示找到字宝宝界面
     showFoundScreen(word) {
-        // 显示覆盖层，不切换 screen
         const foundScreen = document.getElementById('found-screen');
         foundScreen.style.display = 'flex';
 
         document.getElementById('found-char').textContent = word.char;
-        document.getElementById('found-message').textContent =
-            `"${word.char}"字宝宝说："谢谢你找到我！我的家是${word.group}～"`;
+        const msg = `"${word.char}"字宝宝说："谢谢你找到我！我的家是${word.group}～"`;
+        document.getElementById('found-message').textContent = msg;
 
         this.foundWordData = word;
+        this.speakLater(`找到啦！${word.char}！${msg}。点击送字宝宝回家吧！`, 300);
     }
 
     // 送字宝宝回家
@@ -863,9 +877,11 @@ class AdventureGame {
             document.getElementById('found-screen').style.display = 'none';
 
             if (isIslandCompleted) {
+                const islandName = this.islandStories[this.currentIsland].name;
+                this.speakLater(`太棒了！${islandName}的字宝宝都找到啦！美乐蒂说，小小英雄真厉害！`, 200);
                 this.showGameModal({
                     icon: '🎉',
-                    message: `太棒了！<br>${this.islandStories[this.currentIsland].name}的字宝宝都找到啦！<br><br>美乐蒂说："小小英雄真厉害！"`,
+                    message: `太棒了！<br>${islandName}的字宝宝都找到啦！<br><br>美乐蒂说："小小英雄真厉害！"`,
                     buttons: [{ text: '太棒了！', value: true, primary: true }]
                 }).then(() => {
                     if (this.currentIsland < 5) {
@@ -880,9 +896,11 @@ class AdventureGame {
                 const remainingWords = 5 - islandProgress;
 
                 if (remainingWords > 0 && hasMoreWords) {
+                    const foundChars = this.currentWords.map(w => w.char).join('、');
+                    this.speakLater(`太棒了！本轮完成啦！你找到了${foundChars}。还有${remainingWords}个字宝宝等着你哦，要继续玩吗？`, 200);
                     this.showGameModal({
                         icon: '🎉',
-                        message: `太棒了！本轮完成啦！<br><br>找到的字：${this.currentWords.map(w => w.char).join('、')}<br>获得爱心：+${this.currentWords.length * 3} 💖<br><br>${this.islandStories[this.currentIsland].name}还有 ${remainingWords} 个字宝宝等着你哦～`,
+                        message: `太棒了！本轮完成啦！<br><br>找到的字：${foundChars}<br>获得爱心：+${this.currentWords.length * 3} 💖<br><br>${this.islandStories[this.currentIsland].name}还有 ${remainingWords} 个字宝宝等着你哦～`,
                         buttons: [
                             { text: '继续玩！', value: true, primary: true },
                             { text: '回地图', value: false, primary: false }
@@ -927,6 +945,12 @@ class AdventureGame {
     showCastle() {
         this.showScreen('castle-screen');
         document.getElementById('castle-count').textContent = this.state.foundWords.length;
+        const count = this.state.foundWords.length;
+        if (count === 0) {
+            this.speakLater('字宝宝城堡！城堡里还没有字宝宝呢，快去冒险邀请字宝宝们来住吧！', 300);
+        } else {
+            this.speakLater(`字宝宝城堡！已经住了${count}个字宝宝。点一个字宝宝，听听它怎么读吧！`, 300);
+        }
 
         // 显示装饰
         const decoContainer = document.getElementById('castle-decorations');
@@ -974,6 +998,7 @@ class AdventureGame {
     showBackpack() {
         this.showScreen('backpack-screen');
         document.getElementById('backpack-love').textContent = this.state.lovePoints;
+        this.speakLater(`我的背包！你有${this.state.lovePoints}颗爱心，已经找到${this.state.foundWords.length}个字宝宝，探索了${this.state.visitedIslands.length}个岛屿！`, 300);
 
         const stickersGrid = document.getElementById('stickers-grid');
         stickersGrid.innerHTML = '';
@@ -996,6 +1021,7 @@ class AdventureGame {
         this.showScreen('shop-screen');
         document.getElementById('shop-love-points').textContent = this.state.lovePoints;
         this.renderShop();
+        this.speakLater(`魔法商店！你有${this.state.lovePoints}颗爱心，可以买城堡装饰哦！`, 300);
     }
 
     // 渲染商店
@@ -1039,12 +1065,14 @@ class AdventureGame {
                 message: `购买了 ${item.name}！<br>快去城堡看看装饰效果吧～`,
                 buttons: [{ text: '好的', value: true, primary: true }]
             });
+            this.speakLater(`购买了${item.name}！快去城堡看看装饰效果吧！`, 200);
         } else {
             this.showGameModal({
                 icon: '💔',
                 message: '爱心不够呢，继续冒险赚爱心吧！',
                 buttons: [{ text: '好的', value: true, primary: true }]
             });
+            this.speakLater('爱心不够呢，继续冒险赚爱心吧！', 200);
         }
     }
 
@@ -1057,6 +1085,7 @@ class AdventureGame {
                 message: `<b>${word.pinyin}</b><br><br>组词：${word.group}<br>例句：${word.example}`,
                 buttons: [{ text: '知道了', value: true, primary: true }]
             });
+            this.speakLater(`${word.char}，${word.pinyin}。组词：${word.group}。${word.example}。`, 200);
         }, 300);
     }
 
@@ -1064,12 +1093,18 @@ class AdventureGame {
     speak(text) {
         if ('speechSynthesis' in window) {
             speechSynthesis.cancel();
-            const utterance = new SpeechSynthesisUtterance(text);
+            const clean = text.replace(/<[^>]*>/g, '').replace(/\n/g, '，');
+            const utterance = new SpeechSynthesisUtterance(clean);
             utterance.lang = 'zh-CN';
-            utterance.rate = 0.8;
+            utterance.rate = 0.85;
             utterance.pitch = 1.2;
             speechSynthesis.speak(utterance);
         }
+    }
+
+    // 延迟朗读
+    speakLater(text, delay = 300) {
+        setTimeout(() => this.speak(text), delay);
     }
 
     // 播放音效
