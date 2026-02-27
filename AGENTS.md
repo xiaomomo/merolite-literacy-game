@@ -1,16 +1,15 @@
 ## Cursor Cloud specific instructions
 
-This is a pure static HTML/CSS/JS game (no build tools, no package manager, no frameworks). The only external dependency is Python Playwright for testing.
+HTML/CSS/JS game with a Node.js (Express) backend and SQLite database.
 
 ### Running the app
 
-Serve the project root via any static HTTP server:
-
 ```
-python3 -m http.server 8080
+npm install
+node server.js
 ```
 
-Then open http://localhost:8080/ in a browser.
+Server starts on http://localhost:8080 (serves static files + REST API).
 
 ### Testing
 
@@ -24,7 +23,9 @@ Note: `test_game.py` uses `headless=False` and port 8081 by default. For headles
 
 ### Key architecture notes
 
-- `src/game.js` — Single-class game engine (`AdventureGame`). All game state lives in `this.state` and is persisted to `localStorage`.
+- `server.js` — Express server. Serves static files and REST API (`/api/players`, `/api/players/:id/state`). Uses `better-sqlite3` for persistence to `game.db`.
+- `src/game.js` — Single-class game engine (`AdventureGame`). State syncs to both `localStorage` (fast cache) and the server (persistent). Player ID stored in `localStorage` under `merolite-player-id`.
 - `data/wordData.js` — 200 Chinese characters across 10 themed levels (20 chars each). Islands 1-5 map to level groups `[1,2]`, `[3,4]`, `[5]`, `[6,7]`, `[8,9,10]`.
 - `styles/main.css` — Pink-themed responsive CSS. No preprocessor.
 - All user-facing dialogs use the in-game modal system (`#game-modal` / `showGameModal()`), not `alert()`/`confirm()`.
+- `game.db` is gitignored; it is auto-created on first server start.
