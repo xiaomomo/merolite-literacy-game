@@ -116,7 +116,10 @@ node --version
 cd /opt
 git clone https://github.com/xiaomomo/merolite-literacy-game.git game
 cd game
+git checkout cursor/development-environment-setup-336e
 ```
+
+> **重要：** 后端代码（`server.js`、`package.json`）在 `cursor/development-environment-setup-336e` 分支上，`git checkout` 这一步不能省略。如果后续代码已合并到 main 分支，则不需要这一步。
 
 ### 4.2 安装依赖
 
