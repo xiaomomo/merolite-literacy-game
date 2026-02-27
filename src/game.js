@@ -2,12 +2,12 @@
  * 美乐蒂识字大冒险 - 完整版游戏逻辑
  * 包含：捉迷藏、泡泡消除、拼图识字三种游戏
  * 支持 Canvas 动画、商店系统、装饰系统
+ * 后端同步：Express + SQLite
  */
 
 class AdventureGame {
     constructor() {
-        // 游戏状态
-        this.state = {
+        this.defaultState = {
             hasStarted: false,
             adventureDay: 1,
             lovePoints: 0,
@@ -15,10 +15,14 @@ class AdventureGame {
             visitedIslands: [],
             stickers: [],
             decorations: [],
-            ownedDecorations: ['🌸', '⭐', '🎀'], // 初始装饰
+            ownedDecorations: ['🌸', '⭐', '🎀'],
             lastLoginDate: null,
             islandsProgress: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
         };
+
+        this.state = { ...this.defaultState };
+        this.playerId = null;
+        this._saveTimer = null;
 
         // 游戏配置
         this.currentIsland = null;
@@ -141,22 +145,67 @@ class AdventureGame {
         this.gameCanvas.height = rect.height;
     }
 
-    // 加载存档
-    async loadState() {
-        const saved = localStorage.getItem('merolite-adventure');
-        if (saved) {
-            try {
-                const parsed = JSON.parse(saved);
-                this.state = { ...this.state, ...parsed };
-            } catch (e) {
-                console.error('加载存档失败:', e);
-            }
+    // ── 后端 API 方法 ──────────────────────────────────────
+
+    async apiRequest(method, path, body) {
+        try {
+            const opts = { method, headers: { 'Content-Type': 'application/json' } };
+            if (body) opts.body = JSON.stringify(body);
+            const res = await fetch(`/api${path}`, opts);
+            if (!res.ok) return null;
+            return await res.json();
+        } catch {
+            return null;
         }
     }
 
-    // 保存存档
+    async ensurePlayer() {
+        let id = localStorage.getItem('merolite-player-id');
+        if (id) {
+            const check = await this.apiRequest('GET', `/players/${id}`);
+            if (check && !check.error) { this.playerId = id; return; }
+        }
+        const res = await this.apiRequest('POST', '/players', {
+            name: '小小英雄',
+            state: this.defaultState
+        });
+        if (res && res.id) {
+            this.playerId = res.id;
+            localStorage.setItem('merolite-player-id', res.id);
+        }
+    }
+
+    // ── 存档加载 / 保存 ─────────────────────────────────
+
+    async loadState() {
+        await this.ensurePlayer();
+
+        if (this.playerId) {
+            const data = await this.apiRequest('GET', `/players/${this.playerId}/state`);
+            if (data && data.state && Object.keys(data.state).length > 0) {
+                this.state = { ...this.defaultState, ...data.state };
+                localStorage.setItem('merolite-adventure', JSON.stringify(this.state));
+                return;
+            }
+        }
+
+        const saved = localStorage.getItem('merolite-adventure');
+        if (saved) {
+            try { this.state = { ...this.defaultState, ...JSON.parse(saved) }; } catch {}
+        }
+    }
+
     saveState() {
         localStorage.setItem('merolite-adventure', JSON.stringify(this.state));
+        this.saveToServer();
+    }
+
+    saveToServer() {
+        if (!this.playerId) return;
+        clearTimeout(this._saveTimer);
+        this._saveTimer = setTimeout(() => {
+            this.apiRequest('PUT', `/players/${this.playerId}/state`, { state: this.state });
+        }, 300);
     }
 
     // 检查每日登录
