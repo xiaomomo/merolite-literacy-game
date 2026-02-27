@@ -10,7 +10,8 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
 // ── Database ─────────────────────────────────────────────
-const db = new Database(path.join(__dirname, 'game.db'));
+const dbPath = process.env.DB_PATH || path.join(__dirname, 'game.db');
+const db = new Database(dbPath);
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 
