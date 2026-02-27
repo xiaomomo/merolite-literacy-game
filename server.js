@@ -2,6 +2,7 @@ const express = require('express');
 const Database = require('better-sqlite3');
 const path = require('path');
 const crypto = require('crypto');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -91,7 +92,69 @@ app.get('/api/players/:id', (req, res) => {
   res.json(player);
 });
 
+// ── TTS (Qwen3-TTS via DashScope) ───────────────────────
+
+const TTS_CACHE_DIR = process.env.TTS_CACHE_DIR || path.join(__dirname, 'tts-cache');
+fs.mkdirSync(TTS_CACHE_DIR, { recursive: true });
+
+const DASHSCOPE_API_KEY = process.env.DASHSCOPE_API_KEY || '';
+const TTS_VOICE = process.env.TTS_VOICE || 'Cherry';
+const TTS_BASE_URL = process.env.TTS_BASE_URL
+  || 'https://dashscope.aliyuncs.com/compatible-mode/v1/audio/speech';
+
+app.post('/api/tts', async (req, res) => {
+  const text = (req.body.text || '').trim();
+  if (!text) return res.status(400).json({ error: '缺少 text 参数' });
+
+  if (!DASHSCOPE_API_KEY) {
+    return res.status(503).json({ error: 'TTS 未配置：缺少 DASHSCOPE_API_KEY' });
+  }
+
+  const hash = crypto.createHash('md5').update(text).digest('hex');
+  const cacheFile = path.join(TTS_CACHE_DIR, `${hash}.mp3`);
+
+  if (fs.existsSync(cacheFile)) {
+    return res.sendFile(cacheFile);
+  }
+
+  try {
+    const apiRes = await fetch(TTS_BASE_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${DASHSCOPE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'qwen3-tts-flash',
+        input: text,
+        voice: TTS_VOICE,
+        response_format: 'mp3',
+        speed: 0.9,
+      }),
+    });
+
+    if (!apiRes.ok) {
+      const errBody = await apiRes.text();
+      console.error('TTS API error:', apiRes.status, errBody);
+      return res.status(502).json({ error: 'TTS API 调用失败', detail: errBody });
+    }
+
+    const audioBuffer = Buffer.from(await apiRes.arrayBuffer());
+    fs.writeFileSync(cacheFile, audioBuffer);
+    res.set('Content-Type', 'audio/mpeg');
+    res.send(audioBuffer);
+  } catch (err) {
+    console.error('TTS error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── Start ────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`🌸 美乐蒂识字大冒险 服务器已启动: http://localhost:${PORT}`);
+  if (DASHSCOPE_API_KEY) {
+    console.log(`🎙️  TTS 已启用 (voice: ${TTS_VOICE})`);
+  } else {
+    console.log('⚠️  TTS 未启用：请设置环境变量 DASHSCOPE_API_KEY');
+  }
 });

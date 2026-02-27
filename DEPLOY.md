@@ -249,7 +249,80 @@ iPad 上打开 Safari，输入 `http://47.98.xxx.xxx:8080`。
 
 ---
 
-## 八、日常维护
+## 八、开启 Qwen 语音（让美乐蒂说话更好听）
+
+游戏默认使用浏览器自带的机器人语音。如果你想让语音更自然好听，可以接入阿里云通义千问的 TTS 语音合成。
+
+### 8.1 获取 API Key
+
+1. 打开 https://bailian.console.aliyun.com/
+2. 登录后，点击右上角头像 → **API-KEY 管理**
+3. 点击 **创建新的 API-KEY**
+4. 复制生成的 Key（类似 `sk-xxxxxxxxxxxxxxxx`）
+
+> 新用户有免费额度，日常使用费用很低。
+
+### 8.2 在服务器上配置
+
+SSH 登录服务器，编辑服务配置：
+
+```bash
+systemctl stop merolite
+```
+
+```bash
+nano /etc/systemd/system/merolite.service
+```
+
+在 `[Service]` 部分添加一行（把 `sk-xxx` 换成你的 Key）：
+
+```
+Environment=DASHSCOPE_API_KEY=sk-你的API密钥
+```
+
+完整的 `[Service]` 部分应该类似：
+
+```ini
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/game
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=5
+Environment=PORT=8080
+Environment=NODE_ENV=production
+Environment=DASHSCOPE_API_KEY=sk-你的API密钥
+```
+
+保存退出（按 `Ctrl+X`，然后按 `Y`，再按回车）。
+
+然后重启服务：
+
+```bash
+systemctl daemon-reload
+systemctl start merolite
+```
+
+查看日志确认 TTS 已启用：
+
+```bash
+journalctl -u merolite -n 5
+```
+
+应该看到 `🎙️ TTS 已启用 (voice: Cherry)`。
+
+### 8.3 可选：更换语音
+
+默认使用 `Cherry`（温柔甜美女声，很适合美乐蒂）。如果想换，在 service 文件中添加：
+
+```
+Environment=TTS_VOICE=Serena
+```
+
+---
+
+## 九、日常维护
 
 ### 查看游戏运行日志
 
@@ -294,7 +367,7 @@ sqlite3 /opt/game/game.db "SELECT json_extract(state, '$.foundWords') FROM game_
 
 ---
 
-## 九、常见问题
+## 十、常见问题
 
 ### Q：网页打不开？
 

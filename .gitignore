@@ -27,6 +27,9 @@ node_modules/
 game.db
 game.db-wal
 game.db-shm
+
+# TTS cache
+tts-cache/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

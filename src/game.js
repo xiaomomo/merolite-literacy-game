@@ -1138,17 +1138,42 @@ class AdventureGame {
         }, 300);
     }
 
-    // 语音朗读
+    // 语音朗读（优先 Qwen TTS，失败时回退浏览器合成）
     speak(text) {
-        if ('speechSynthesis' in window) {
-            speechSynthesis.cancel();
-            const clean = text.replace(/<[^>]*>/g, '').replace(/\n/g, '，');
-            const utterance = new SpeechSynthesisUtterance(clean);
-            utterance.lang = 'zh-CN';
-            utterance.rate = 0.85;
-            utterance.pitch = 1.2;
-            speechSynthesis.speak(utterance);
+        const clean = text.replace(/<[^>]*>/g, '').replace(/\n/g, '，').trim();
+        if (!clean) return;
+
+        if (this._currentAudio) {
+            this._currentAudio.pause();
+            this._currentAudio = null;
         }
+        if ('speechSynthesis' in window) speechSynthesis.cancel();
+
+        fetch('/api/tts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: clean }),
+        })
+        .then(res => {
+            if (!res.ok) throw new Error('TTS API unavailable');
+            return res.blob();
+        })
+        .then(blob => {
+            const url = URL.createObjectURL(blob);
+            const audio = new Audio(url);
+            audio.onended = () => URL.revokeObjectURL(url);
+            this._currentAudio = audio;
+            audio.play();
+        })
+        .catch(() => {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(clean);
+                utterance.lang = 'zh-CN';
+                utterance.rate = 0.85;
+                utterance.pitch = 1.2;
+                speechSynthesis.speak(utterance);
+            }
+        });
     }
 
     // 延迟朗读

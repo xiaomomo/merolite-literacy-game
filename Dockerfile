@@ -12,6 +12,7 @@ RUN mkdir -p /app/data
 ENV NODE_ENV=production
 ENV PORT=8080
 ENV DB_PATH=/app/data/game.db
+ENV TTS_CACHE_DIR=/app/data/tts-cache
 
 EXPOSE 8080
 
