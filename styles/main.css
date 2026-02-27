@@ -748,12 +748,11 @@ body {
 }
 
 .word-bubble {
-    display: inline-block;
     background: linear-gradient(135deg, var(--pink-dark), var(--pink-medium));
     border-radius: 50%;
     width: 180px;
     height: 180px;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     animation: wordCelebrate 0.5s infinite alternate;
