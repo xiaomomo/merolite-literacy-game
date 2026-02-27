@@ -910,12 +910,92 @@ body {
     z-index: 5;
 }
 
+/* 隐藏 canvas（仅用于特殊效果时按需显示） */
 .game-canvas {
+    display: none;
+}
+
+/* ==================== 游戏场景装饰 ==================== */
+.game-scene {
+    position: relative;
     width: 100%;
-    height: 400px;
-    background: linear-gradient(180deg, #E0F7FA 0%, #FFFFFF 100%);
+    height: 180px;
     border-radius: 20px;
-    margin-top: 20px;
+    margin-top: 15px;
+    overflow: hidden;
+    background: linear-gradient(180deg, #D4F1F9 0%, #A8E6CF 70%, #7BC67E 100%);
+}
+
+.scene-sky {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 60%;
+}
+
+.scene-cloud {
+    position: absolute;
+    font-size: 2.2rem;
+    opacity: 0.7;
+}
+.scene-cloud.sc1 {
+    top: 10px;
+    left: 10%;
+    animation: cloudFloat 22s linear infinite;
+}
+.scene-cloud.sc2 {
+    top: 25px;
+    left: 55%;
+    font-size: 1.6rem;
+    animation: cloudFloat 28s linear infinite 6s;
+}
+
+.scene-sun {
+    position: absolute;
+    top: 8px;
+    right: 12%;
+    font-size: 2.5rem;
+    animation: pulse 3s ease-in-out infinite;
+}
+
+.scene-ground {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 55%;
+}
+
+.scene-item {
+    position: absolute;
+    bottom: 0;
+}
+.scene-item.si1 { left: 5%;  bottom: 2px;  font-size: 1.8rem; animation: flowerSway 3s ease-in-out infinite; }
+.scene-item.si2 { left: 20%; bottom: 0;    font-size: 1.5rem; animation: flowerSway 3.4s ease-in-out infinite 0.5s; }
+.scene-item.si3 { left: 50%; bottom: 2px;  font-size: 2rem;   animation: flowerSway 2.8s ease-in-out infinite 0.2s; }
+.scene-item.si4 { left: 72%; bottom: 0;    font-size: 1.4rem; animation: flowerSway 3.6s ease-in-out infinite 0.8s; }
+.scene-item.si5 { left: 90%; bottom: 2px;  font-size: 1.6rem; animation: flowerSway 3.2s ease-in-out infinite 0.3s; }
+.scene-item.si6 { left: 38%; bottom: 40px; font-size: 1.5rem; animation: butterflyFly 8s ease-in-out infinite; }
+.scene-item.si7 { left: 82%; bottom: 18px; font-size: 1.2rem; animation: ladybugWalk 10s linear infinite; }
+
+@keyframes flowerSway {
+    0%, 100% { transform: rotate(-3deg); }
+    50%      { transform: rotate(3deg); }
+}
+
+@keyframes butterflyFly {
+    0%   { transform: translate(0, 0) rotate(0deg); }
+    25%  { transform: translate(40px, -20px) rotate(5deg); }
+    50%  { transform: translate(80px, -5px) rotate(-3deg); }
+    75%  { transform: translate(30px, -25px) rotate(4deg); }
+    100% { transform: translate(0, 0) rotate(0deg); }
+}
+
+@keyframes ladybugWalk {
+    0%   { transform: translateX(0); }
+    50%  { transform: translateX(-60px); }
+    100% { transform: translateX(0); }
 }
 
 /* ==================== 云朵装饰 ==================== */
