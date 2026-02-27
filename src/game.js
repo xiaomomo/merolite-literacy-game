@@ -603,8 +603,9 @@ class AdventureGame {
         container.style.display = 'flex';
         container.style.flexWrap = 'wrap';
         container.style.justifyContent = 'center';
-        container.style.gap = '20px';
-        container.style.padding = '20px';
+        container.style.alignItems = 'flex-end';
+        container.style.gap = '24px';
+        container.style.padding = '30px 20px 40px';
 
         const allWords = wordData.getAllWords();
         const options = [this.targetWord];
@@ -618,11 +619,23 @@ class AdventureGame {
 
         options.sort(() => Math.random() - 0.5);
 
+        const cardThemes = [
+            { decos: ['🌸', '🌷'], face: '🐱' },
+            { decos: ['🍀', '🌿'], face: '🐰' },
+            { decos: ['⭐', '✨'], face: '🐻' },
+            { decos: ['🎀', '💜'], face: '🐼' }
+        ];
+
         options.forEach((word, index) => {
+            const theme = cardThemes[index % cardThemes.length];
             const card = document.createElement('div');
-            card.className = 'game-card-large';
-            card.style.animation = `bounce ${0.5 + index * 0.1}s infinite`;
-            card.innerHTML = `<span class="char">${word.char}</span>`;
+            card.className = `game-card-large card-style-${index % 4}`;
+            card.innerHTML = `
+                <span class="card-deco top-left">${theme.decos[0]}</span>
+                <span class="card-deco top-right">${theme.decos[1]}</span>
+                <span class="char">${word.char}</span>
+                <span class="card-face">${theme.face}</span>
+            `;
 
             card.addEventListener('click', () => {
                 if (word.char === this.targetWord.char) {
@@ -630,7 +643,9 @@ class AdventureGame {
                     this.showFoundScreen(word);
                 } else {
                     this.playSound('wrong');
-                    card.style.opacity = '0.5';
+                    card.style.opacity = '0.4';
+                    card.style.transform = 'scale(0.9)';
+                    card.style.filter = 'grayscale(0.6)';
                     this.speak('再试试');
                 }
             });
