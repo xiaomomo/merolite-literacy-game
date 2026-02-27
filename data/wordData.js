@@ -216,7 +216,7 @@ const wordData = {
         { char: "灰", pinyin: "huī", group: "灰色", example: "灰色天空" },
         { char: "橙", pinyin: "chéng", group: "橙色", example: "橙色温暖" },
         { char: "青", pinyin: "qīng", group: "青色", example: "青草青青" },
-        { char: "金", pinyin: "jīn", group: "金色", example: "金色阳光" },
+        { char: "棕", pinyin: "zōng", group: "棕色", example: "棕色小熊" },
         { char: "银", pinyin: "yín", group: "银色", example: "银色月光" },
         { char: "铜", pinyin: "tóng", group: "铜色", example: "铜色温暖" },
         { char: "铁", pinyin: "tiě", group: "铁色", example: "铁黑铁黑" },

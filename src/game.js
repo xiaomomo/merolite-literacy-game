@@ -211,8 +211,15 @@ class AdventureGame {
         this.updateUI();
 
         setTimeout(() => {
-            alert(`🎁 美乐蒂送给你：\n💖 ${loveReward} 爱心\n🎨 ${newSticker} 贴纸`);
-            this.showScreen('map-screen');
+            this.showGameModal({
+                icon: '🎁',
+                message: `美乐蒂送给你：<br><br>💖 ${loveReward} 爱心<br>🎨 ${newSticker} 贴纸`,
+                buttons: [{ text: '谢谢美乐蒂！', value: true, primary: true }]
+            }).then(() => {
+                this.showScreen('map-screen');
+                this.updateMap();
+                this.animatePath();
+            });
         }, 1000);
     }
 
@@ -222,6 +229,7 @@ class AdventureGame {
         document.getElementById('btn-start-adventure').addEventListener('click', () => {
             this.state.hasStarted = true;
             this.saveState();
+            this.checkDailyLogin();
             this.showScreen('map-screen');
             this.updateMap();
             this.showMapDialogue();
@@ -292,8 +300,6 @@ class AdventureGame {
 
         // 送字宝宝回家
         document.getElementById('btn-send-home').addEventListener('click', () => {
-            console.log('点击送字宝宝回家');
-            console.log('foundWordData:', this.foundWordData);
             this.sendWordHome();
         });
 
@@ -381,6 +387,10 @@ class AdventureGame {
 
     // 绘制路径动画
     animatePath() {
+        if (this.animationFrame) {
+            cancelAnimationFrame(this.animationFrame);
+            this.animationFrame = null;
+        }
         if (!this.pathCtx) return;
 
         this.pathCtx.clearRect(0, 0, this.pathCanvas.width, this.pathCanvas.height);
@@ -407,7 +417,11 @@ class AdventureGame {
         if (islandId > 1) {
             const prevProgress = this.state.islandsProgress[islandId - 1];
             if (prevProgress < 3) {
-                alert('先完成前面的岛屿吧！字宝宝们需要你的帮助～');
+                this.showGameModal({
+                    icon: '🔒',
+                    message: '先完成前面的岛屿吧！<br>字宝宝们需要你的帮助～',
+                    buttons: [{ text: '好的', value: true, primary: true }]
+                });
                 return;
             }
         }
@@ -419,7 +433,7 @@ class AdventureGame {
         document.getElementById('story-text').textContent = islandData.story;
 
         this.showScreen('level-screen');
-        document.getElementById('level-story').style.display = 'flex';
+        document.getElementById('level-story').style.display = 'block';
         document.getElementById('game-type-select').style.display = 'none';
         document.getElementById('game-area').style.display = 'none';
 
@@ -516,7 +530,15 @@ class AdventureGame {
         this.currentWords = availableWords.slice(0, wordsToPlay);
 
         if (this.currentWords.length === 0) {
-            alert('哇！所有的字宝宝都被你找到啦！\n\n美乐蒂说："你真是太厉害了！"');
+            this.showGameModal({
+                icon: '🎊',
+                message: '哇！所有的字宝宝都被你找到啦！<br><br>美乐蒂说："你真是太厉害了！"',
+                buttons: [{ text: '太棒了！', value: true, primary: true }]
+            }).then(() => {
+                this.showScreen('map-screen');
+                this.showMapDialogue();
+                this.animatePath();
+            });
             return;
         }
 
@@ -543,41 +565,26 @@ class AdventureGame {
 
     // 下一个字
     nextWord() {
-        console.log('nextWord 被调用', {
-            wordsFoundInSession: this.wordsFoundInSession,
-            currentWords: this.currentWords.length,
-            currentGameType: this.currentGameType
-        });
-
-        // 检查本轮是否完成
         if (this.wordsFoundInSession >= this.currentWords.length) {
-            console.log('本轮完成，返回');
             return;
         }
 
         this.targetWord = this.currentWords[this.wordsFoundInSession];
 
-        console.log('目标字:', this.targetWord);
-
         document.getElementById('game-instruction').textContent =
             `美乐蒂说："${this.targetWord.char}"字宝宝在哪里呢？`;
 
-        // 重置游戏内容区域
         const content = document.getElementById('game-content');
         content.innerHTML = '';
         content.style.display = 'block';
 
         this.speak(`请找到${this.targetWord.char}字`);
 
-        // 根据选择的游戏类型开始游戏
         if (this.currentGameType === 'bubble') {
-            console.log('开始泡泡游戏');
             this.startBubbleGame();
         } else if (this.currentGameType === 'puzzle') {
-            console.log('开始拼图游戏');
             this.startPuzzleGame();
         } else {
-            console.log('开始捉迷藏游戏');
             this.startHideSeekGame();
         }
     }
@@ -590,9 +597,7 @@ class AdventureGame {
 
     // 游戏 1：捉迷藏
     startHideSeekGame() {
-        console.log('startHideSeekGame 被调用');
         const container = document.getElementById('game-content');
-        console.log('container:', container);
 
         container.innerHTML = '';
         container.style.display = 'flex';
@@ -613,14 +618,11 @@ class AdventureGame {
 
         options.sort(() => Math.random() - 0.5);
 
-        console.log('创建选项卡片:', options.map(o => o.char));
-
         options.forEach((word, index) => {
             const card = document.createElement('div');
             card.className = 'game-card-large';
             card.style.animation = `bounce ${0.5 + index * 0.1}s infinite`;
             card.innerHTML = `<span class="char">${word.char}</span>`;
-            console.log('创建卡片:', word.char);
 
             card.addEventListener('click', () => {
                 if (word.char === this.targetWord.char) {
@@ -635,26 +637,19 @@ class AdventureGame {
 
             container.appendChild(card);
         });
-
-        console.log('卡片创建完成，container 子元素数量:', container.children.length);
     }
 
     // 游戏 2：泡泡消除
     startBubbleGame() {
-        console.log('startBubbleGame 被调用');
-
         const gameArea = document.getElementById('game-area');
         const gameContent = document.getElementById('game-content');
         const gameInstruction = document.getElementById('game-instruction');
 
-        // 确保游戏区域可见
         gameArea.style.display = 'block';
         gameContent.style.display = 'block';
         gameContent.style.position = 'relative';
         gameContent.style.minHeight = '450px';
         gameInstruction.style.display = 'block';
-
-        console.log('gameContent:', gameContent, 'display:', gameContent.style.display);
 
         gameContent.innerHTML = '';
 
@@ -670,9 +665,6 @@ class AdventureGame {
 
         options.sort(() => Math.random() - 0.5);
 
-        console.log('泡泡选项:', options.map(o => o.char));
-
-        // 泡泡位置
         const positions = [
             { x: 20, y: 80 },
             { x: 50, y: 20 },
@@ -711,7 +703,6 @@ class AdventureGame {
             `;
 
             bubble.innerHTML = `<span>${word.char}</span>`;
-            console.log('创建泡泡:', word.char, '位置:', positions[index].x + '%', positions[index].y + 'px');
 
             bubble.addEventListener('click', (e) => {
                 if (word.char === this.targetWord.char) {
@@ -729,8 +720,6 @@ class AdventureGame {
 
             gameContent.appendChild(bubble);
         });
-
-        console.log('泡泡创建完成，container 子元素数量:', gameContent.children.length);
     }
 
     // 创建泡泡爆破效果
@@ -811,7 +800,7 @@ class AdventureGame {
     showFoundScreen(word) {
         // 显示覆盖层，不切换 screen
         const foundScreen = document.getElementById('found-screen');
-        foundScreen.style.display = 'block';
+        foundScreen.style.display = 'flex';
 
         document.getElementById('found-char').textContent = word.char;
         document.getElementById('found-message').textContent =
@@ -822,11 +811,12 @@ class AdventureGame {
 
     // 送字宝宝回家
     sendWordHome() {
-        console.log('sendWordHome 被调用');
-
         if (!this.foundWordData) {
-            console.error('foundWordData 为空！');
-            alert('出错了，没有找到字宝宝数据，请刷新页面重试');
+            this.showGameModal({
+                icon: '😢',
+                message: '出错了，没有找到字宝宝数据，<br>请刷新页面重试',
+                buttons: [{ text: '好的', value: true, primary: true }]
+            });
             return;
         }
 
@@ -843,13 +833,6 @@ class AdventureGame {
         this.state.lovePoints += 3;
         this.wordsFoundInSession++;
 
-        console.log('更新后状态:', {
-            foundWords: this.state.foundWords.length,
-            islandProgress: this.state.islandsProgress[this.currentIsland],
-            wordsFoundInSession: this.wordsFoundInSession,
-            currentWords: this.currentWords.length
-        });
-
         this.saveState();
         this.updateUI();
         this.updateMap();
@@ -857,71 +840,60 @@ class AdventureGame {
 
         const islandProgress = this.state.islandsProgress[this.currentIsland];
         const isIslandCompleted = islandProgress >= 5;
-
-        // 检查本轮是否完成（3 个字都找到了）
         const sessionComplete = this.wordsFoundInSession >= this.currentWords.length;
-
-        // 检查是否还有字可以玩
         const allWords = wordData.getAllWords();
         const hasMoreWords = this.state.foundWords.length < allWords.length;
 
-        console.log('判断逻辑:', {
-            isIslandCompleted,
-            sessionComplete,
-            hasMoreWords,
-            remainingWords: 5 - islandProgress
-        });
-
         setTimeout(() => {
+            document.getElementById('found-screen').style.display = 'none';
+
             if (isIslandCompleted) {
-                // 岛屿完成了
-                alert(`🎉 太棒了！\n${this.islandStories[this.currentIsland].name}的字宝宝都找到啦！\n\n美乐蒂说："小小英雄真厉害！"`);
-
-                if (this.currentIsland < 5) {
-                    // 解锁了下一个岛屿
-                    this.showToast(`🎉 解锁新岛屿：${this.islandStories[this.currentIsland + 1].name}！`);
-                }
-
-                // 隐藏 overlay 并返回地图
-                document.getElementById('found-screen').style.display = 'none';
-                this.showScreen('map-screen');
-                this.showMapDialogue();
+                this.showGameModal({
+                    icon: '🎉',
+                    message: `太棒了！<br>${this.islandStories[this.currentIsland].name}的字宝宝都找到啦！<br><br>美乐蒂说："小小英雄真厉害！"`,
+                    buttons: [{ text: '太棒了！', value: true, primary: true }]
+                }).then(() => {
+                    if (this.currentIsland < 5) {
+                        this.showToast(`🎉 解锁新岛屿：${this.islandStories[this.currentIsland + 1].name}！`);
+                    }
+                    this.showScreen('map-screen');
+                    this.showMapDialogue();
+                    this.animatePath();
+                });
 
             } else if (sessionComplete) {
-                // 本轮完成，但岛屿还没完成
                 const remainingWords = 5 - islandProgress;
 
                 if (remainingWords > 0 && hasMoreWords) {
-                    // 还有字可以玩，询问是否继续
-                    const continuePlaying = confirm(
-                        `🎉 太棒了！\n本轮完成啦！\n\n找到的字：${this.currentWords.map(w => w.char).join('、')}\n获得爱心：+${this.currentWords.length * 3} 💖\n\n${this.islandStories[this.currentIsland].name}还有 ${remainingWords} 个字宝宝等着你哦～\n\n要不要继续玩？\n\n点击"确定"继续玩，点击"取消"返回地图～`
-                    );
-
-                    // 隐藏 overlay
-                    document.getElementById('found-screen').style.display = 'none';
-
-                    if (continuePlaying) {
-                        // 继续下一轮，重新选择游戏类型
-                        this.showGameTypeSelect();
-                    } else {
-                        // 返回地图
+                    this.showGameModal({
+                        icon: '🎉',
+                        message: `太棒了！本轮完成啦！<br><br>找到的字：${this.currentWords.map(w => w.char).join('、')}<br>获得爱心：+${this.currentWords.length * 3} 💖<br><br>${this.islandStories[this.currentIsland].name}还有 ${remainingWords} 个字宝宝等着你哦～`,
+                        buttons: [
+                            { text: '继续玩！', value: true, primary: true },
+                            { text: '回地图', value: false, primary: false }
+                        ]
+                    }).then(continuePlaying => {
+                        if (continuePlaying) {
+                            this.showGameTypeSelect();
+                        } else {
+                            this.showScreen('map-screen');
+                            this.showMapDialogue();
+                            this.animatePath();
+                        }
+                    });
+                } else {
+                    this.showGameModal({
+                        icon: '🎉',
+                        message: '哇！这个岛屿上的字宝宝都被你找到啦！<br><br>美乐蒂说："小小英雄太厉害了！"',
+                        buttons: [{ text: '太棒了！', value: true, primary: true }]
+                    }).then(() => {
                         this.showScreen('map-screen');
                         this.showMapDialogue();
-                    }
-                } else {
-                    // 没有字可以玩了
-                    alert('🎉 哇！这个岛屿上的字宝宝都被你找到啦！\n\n美乐蒂说："小小英雄太厉害了！"');
-                    document.getElementById('found-screen').style.display = 'none';
-                    this.showScreen('map-screen');
-                    this.showMapDialogue();
+                        this.animatePath();
+                    });
                 }
 
             } else {
-                // 本轮还没完成，继续下一个字
-                console.log('继续下一个字');
-                // 隐藏 overlay
-                document.getElementById('found-screen').style.display = 'none';
-                // 确保游戏区域可见
                 const gameArea = document.getElementById('game-area');
                 const gameContent = document.getElementById('game-content');
                 const gameInstruction = document.getElementById('game-instruction');
@@ -1043,12 +1015,21 @@ class AdventureGame {
             this.state.ownedDecorations.push(item.icon);
             this.saveState();
             this.updateUI();
+            document.getElementById('shop-love-points').textContent = this.state.lovePoints;
             this.renderShop();
 
             this.playSound('correct');
-            alert(`🎉 购买了 ${item.name}！\n快去城堡看看装饰效果吧～`);
+            this.showGameModal({
+                icon: '🎉',
+                message: `购买了 ${item.name}！<br>快去城堡看看装饰效果吧～`,
+                buttons: [{ text: '好的', value: true, primary: true }]
+            });
         } else {
-            alert('💔 爱心不够呢，继续冒险赚爱心吧！');
+            this.showGameModal({
+                icon: '💔',
+                message: '爱心不够呢，继续冒险赚爱心吧！',
+                buttons: [{ text: '好的', value: true, primary: true }]
+            });
         }
     }
 
@@ -1056,13 +1037,18 @@ class AdventureGame {
     showWordDetail(word) {
         this.speak(word.char);
         setTimeout(() => {
-            alert(`${word.char} (${word.pinyin})\n\n组词：${word.group}\n\n例句：${word.example}`);
+            this.showGameModal({
+                icon: word.char,
+                message: `<b>${word.pinyin}</b><br><br>组词：${word.group}<br>例句：${word.example}`,
+                buttons: [{ text: '知道了', value: true, primary: true }]
+            });
         }, 300);
     }
 
     // 语音朗读
     speak(text) {
         if ('speechSynthesis' in window) {
+            speechSynthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'zh-CN';
             utterance.rate = 0.8;
@@ -1094,6 +1080,34 @@ class AdventureGame {
             oscillator.start(this.audioContext.currentTime);
             oscillator.stop(this.audioContext.currentTime + 0.3);
         }
+    }
+
+    // 游戏内弹窗（替代 alert/confirm）
+    showGameModal(options) {
+        return new Promise((resolve) => {
+            const modal = document.getElementById('game-modal');
+            const iconEl = document.getElementById('modal-icon');
+            const messageEl = document.getElementById('modal-message');
+            const buttonsEl = document.getElementById('modal-buttons');
+
+            iconEl.textContent = options.icon || '🎀';
+            messageEl.innerHTML = options.message;
+            buttonsEl.innerHTML = '';
+
+            const buttons = options.buttons || [{ text: '好的', value: true, primary: true }];
+            buttons.forEach(btn => {
+                const button = document.createElement('button');
+                button.className = `game-modal-btn ${btn.primary ? 'primary' : 'secondary'}`;
+                button.textContent = btn.text;
+                button.addEventListener('click', () => {
+                    modal.style.display = 'none';
+                    resolve(btn.value);
+                });
+                buttonsEl.appendChild(button);
+            });
+
+            modal.style.display = 'flex';
+        });
     }
 
     // 庆祝动画
