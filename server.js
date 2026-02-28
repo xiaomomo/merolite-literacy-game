@@ -101,22 +101,23 @@ const DASHSCOPE_API_KEY = process.env.DASHSCOPE_API_KEY || '';
 const TTS_VOICE = process.env.TTS_VOICE || 'Cherry';
 const TTS_API_URL = 'https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation';
 
-app.post('/api/tts', async (req, res) => {
-  const text = (req.body.text || '').trim();
-  if (!text) return res.status(400).json({ error: '缺少 text 参数' });
-
-  if (!DASHSCOPE_API_KEY) {
-    return res.status(503).json({ error: 'TTS 未配置：缺少 DASHSCOPE_API_KEY' });
-  }
+// GET 请求：浏览器可缓存，配合 prefetch 实现零延迟
+app.get('/api/tts', async (req, res) => {
+  const text = (req.query.t || '').trim();
+  if (!text) return res.status(400).json({ error: '缺少 t 参数' });
+  if (!DASHSCOPE_API_KEY) return res.status(503).json({ error: 'TTS 未配置' });
 
   const hash = crypto.createHash('md5').update(text).digest('hex');
   const cacheFile = path.join(TTS_CACHE_DIR, `${hash}.wav`);
 
+  // 有缓存：直接返回，标记为浏览器可永久缓存
   if (fs.existsSync(cacheFile)) {
     res.set('Content-Type', 'audio/wav');
+    res.set('Cache-Control', 'public, max-age=31536000, immutable');
     return res.sendFile(cacheFile);
   }
 
+  // 无缓存：调 API 生成
   try {
     const apiRes = await fetch(TTS_API_URL, {
       method: 'POST',
@@ -132,27 +133,32 @@ app.post('/api/tts', async (req, res) => {
     });
 
     const data = await apiRes.json();
-
     if (!apiRes.ok || data.code) {
       console.error('TTS API error:', apiRes.status, JSON.stringify(data));
-      return res.status(502).json({ error: 'TTS API 调用失败', detail: data.message });
+      return res.status(502).json({ error: 'TTS 调用失败' });
     }
 
     const audioUrl = data.output?.audio?.url;
-    if (!audioUrl) {
-      console.error('TTS: 响应中没有音频 URL', JSON.stringify(data).slice(0, 500));
-      return res.status(502).json({ error: '无法解析 TTS 响应' });
-    }
+    if (!audioUrl) return res.status(502).json({ error: '无音频' });
 
     const audioRes = await fetch(audioUrl);
     const audioBuffer = Buffer.from(await audioRes.arrayBuffer());
     fs.writeFileSync(cacheFile, audioBuffer);
     res.set('Content-Type', 'audio/wav');
+    res.set('Cache-Control', 'public, max-age=31536000, immutable');
     res.send(audioBuffer);
   } catch (err) {
     console.error('TTS error:', err.message);
     res.status(500).json({ error: err.message });
   }
+});
+
+// 兼容旧的 POST 接口（内部预热用）
+app.post('/api/tts', (req, res) => {
+  const text = (req.body.text || '').trim();
+  if (!text) return res.status(400).json({ error: '缺少 text' });
+  // 重定向到 GET
+  res.redirect(307, `/api/tts?t=${encodeURIComponent(text)}`);
 });
 
 // ── AI 配图 (通义万相) ──────────────────────────────────

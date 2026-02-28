@@ -1488,66 +1488,41 @@ class AdventureGame {
         return text.replace(/<[^>]*>/g, '').replace(/\n/g, '，').trim();
     }
 
-    // 预加载：后台下载音频到内存缓存，不播放
+    _ttsUrl(text) {
+        return `/api/tts?t=${encodeURIComponent(text)}`;
+    }
+
+    // 预加载：让浏览器缓存音频（GET 请求 + Cache-Control: immutable）
     prefetch(texts) {
-        if (!this._audioCache) this._audioCache = new Map();
         const list = Array.isArray(texts) ? texts : [texts];
         list.forEach(raw => {
             const t = this._cleanText(raw);
-            if (!t || this._audioCache.has(t)) return;
-            this._audioCache.set(t, null); // 占位防重复请求
-            fetch('/api/tts', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: t }),
-            })
-            .then(r => r.ok ? r.blob() : Promise.reject())
-            .then(blob => this._audioCache.set(t, blob))
-            .catch(() => this._audioCache.delete(t));
+            if (!t) return;
+            // 用 <link rel=prefetch> 或 fetch 触发浏览器缓存
+            const link = document.createElement('link');
+            link.rel = 'prefetch';
+            link.as = 'audio';
+            link.href = this._ttsUrl(t);
+            document.head.appendChild(link);
         });
     }
 
-    // 播放：优先内存缓存 → 请求API → 浏览器合成
+    // 播放：GET 请求 → 浏览器缓存命中秒播放
     speak(text) {
         const clean = this._cleanText(text);
         if (!clean) return;
         this.stopSpeaking();
-        if (!this._audioCache) this._audioCache = new Map();
 
-        const cached = this._audioCache.get(clean);
-        if (cached instanceof Blob) {
-            this._playBlob(cached);
-            return;
-        }
-
-        fetch('/api/tts', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: clean }),
-        })
-        .then(r => {
-            if (!r.ok) throw new Error();
-            return r.blob();
-        })
-        .then(blob => {
-            this._audioCache.set(clean, blob);
-            this._playBlob(blob);
-        })
-        .catch(() => {
+        const audio = new Audio(this._ttsUrl(clean));
+        audio.onerror = () => {
             if ('speechSynthesis' in window) {
                 const u = new SpeechSynthesisUtterance(clean);
                 u.lang = 'zh-CN'; u.rate = 0.85; u.pitch = 1.2;
                 speechSynthesis.speak(u);
             }
-        });
-    }
-
-    _playBlob(blob) {
-        const url = URL.createObjectURL(blob);
-        const audio = new Audio(url);
-        audio.onended = () => URL.revokeObjectURL(url);
+        };
         this._currentAudio = audio;
-        audio.play();
+        audio.play().catch(() => {});
     }
 
     speakLater(text, delay = 300) {
