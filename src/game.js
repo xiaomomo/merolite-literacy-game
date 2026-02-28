@@ -17,7 +17,8 @@ class AdventureGame {
             decorations: [],
             ownedDecorations: ['🌸', '⭐', '🎀'],
             lastLoginDate: null,
-            islandsProgress: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+            currentGradeId: null,
+            islandsProgress: {}
         };
 
         this.state = { ...this.defaultState };
@@ -25,7 +26,9 @@ class AdventureGame {
         this._saveTimer = null;
 
         // 游戏配置
+        this.currentGrade = null;
         this.currentIsland = null;
+        this.currentIslandData = null;
         this.currentWords = [];
         this.targetWord = null;
         this.wordsFoundInSession = 0;
@@ -98,20 +101,79 @@ class AdventureGame {
         this.setupCanvas();
         this.bindEvents();
         this.renderShop();
+        this.renderGradeSelect();
 
-        // 检查是否第一次打开
         if (!this.state.hasStarted) {
             this.showScreen('intro-screen');
             this.speakLater('在很远的地方，有一个神奇的字宝宝王国。可是有一天，一场大雾把王国笼罩，所有的字宝宝都迷路了！美乐蒂需要一位小小英雄的帮助，一起寻找字宝宝，送它们回家！你愿意帮助美乐蒂吗？点击开始冒险吧！', 500);
+        } else if (this.state.currentGradeId) {
+            this.selectGrade(this.state.currentGradeId, true);
+            this.checkDailyLogin();
         } else {
             this.checkDailyLogin();
-            this.showScreen('map-screen');
-            this.updateMap();
-            this.showMapDialogue();
-            this.animatePath();
+            this.showScreen('grade-screen');
+            this.speakLater('选择你要学习的课本吧！', 400);
         }
 
         this.updateUI();
+    }
+
+    // ── 年级选择 ──────────────────────────────
+
+    renderGradeSelect() {
+        const grid = document.getElementById('grade-grid');
+        grid.innerHTML = '';
+        wordData.grades.forEach(grade => {
+            const unitCount = grade.units.length;
+            const wordCount = grade.units.reduce((s, u) => s + u.words.length, 0);
+            const card = document.createElement('div');
+            card.className = 'grade-card';
+            card.innerHTML = `
+                <div class="grade-card-icon">${grade.icon}</div>
+                <div class="grade-card-name">${grade.name}</div>
+                <div class="grade-card-info">${unitCount} 个单元 · ${wordCount} 个字</div>
+            `;
+            card.addEventListener('click', () => this.selectGrade(grade.id));
+            grid.appendChild(card);
+        });
+    }
+
+    selectGrade(gradeId, silent) {
+        this.currentGrade = wordData.getGrade(gradeId);
+        if (!this.currentGrade) return;
+        this.state.currentGradeId = gradeId;
+        this.saveState();
+
+        this.buildMapForGrade();
+        this.showScreen('map-screen');
+        this.updateMap();
+        if (!silent) this.showMapDialogue();
+        this.animatePath();
+    }
+
+    buildMapForGrade() {
+        const mapArea = document.querySelector('.map-area');
+        const title = mapArea.querySelector('.map-title');
+        title.textContent = `📚 ${this.currentGrade.name}`;
+
+        mapArea.querySelectorAll('.island').forEach(el => el.remove());
+
+        this.currentGrade.units.forEach((unit, idx) => {
+            const el = document.createElement('div');
+            el.className = 'island';
+            el.dataset.island = unit.id;
+            el.id = `island-${unit.id}`;
+            el.innerHTML = `
+                <div class="island-sprite">${unit.icon}</div>
+                <div class="island-name">${unit.name}</div>
+                <div class="island-progress" id="progress-${unit.id}">0/${unit.words.length}</div>
+                <div class="island-lock" id="lock-${unit.id}">🔒</div>
+            `;
+            el.style.order = idx + 1;
+            el.addEventListener('click', () => this.enterIsland(unit.id));
+            const canvas = mapArea.querySelector('.path-canvas');
+            mapArea.insertBefore(el, canvas);
+        });
     }
 
     // 设置 Canvas
@@ -284,10 +346,19 @@ class AdventureGame {
             this.saveState();
             this.speak('出发！');
             this.checkDailyLogin();
-            this.showScreen('map-screen');
-            this.updateMap();
-            this.showMapDialogue();
-            this.animatePath();
+            this.showScreen('grade-screen');
+            this.speakLater('选择你要学习的课本吧！', 400);
+        });
+
+        // 回到年级选择
+        document.getElementById('btn-back-intro').addEventListener('click', () => {
+            this.showScreen('grade-screen');
+            this.speakLater('选择你要学习的课本吧！', 300);
+        });
+
+        document.getElementById('btn-switch-grade').addEventListener('click', () => {
+            this.showScreen('grade-screen');
+            this.speakLater('选择你要学习的课本吧！', 300);
         });
 
         // 打开礼物
@@ -295,13 +366,7 @@ class AdventureGame {
             this.openGift();
         });
 
-        // 岛屿点击
-        document.querySelectorAll('.island').forEach(island => {
-            island.addEventListener('click', (e) => {
-                const islandId = parseInt(e.currentTarget.dataset.island);
-                this.enterIsland(islandId);
-            });
-        });
+        // 岛屿点击（动态生成，在 buildMapForGrade 中绑定）
 
         // 底部按钮
         document.getElementById('btn-castle').addEventListener('click', () => {
@@ -387,32 +452,34 @@ class AdventureGame {
 
     // 更新地图
     updateMap() {
-        for (let i = 1; i <= 5; i++) {
-            const progressEl = document.getElementById(`island-${i}-progress`);
-            const lockEl = document.getElementById(`island-${i}-lock`);
-            const islandEl = document.getElementById(`island-${i}`);
+        if (!this.currentGrade) return;
+        const units = this.currentGrade.units;
 
-            progressEl.textContent = `${this.state.islandsProgress[i]}/5`;
+        units.forEach((unit, idx) => {
+            const progressEl = document.getElementById(`progress-${unit.id}`);
+            const lockEl = document.getElementById(`lock-${unit.id}`);
+            const islandEl = document.getElementById(`island-${unit.id}`);
+            if (!progressEl || !lockEl || !islandEl) return;
 
-            if (i === 1) {
+            const progress = this.state.islandsProgress[unit.id] || 0;
+            progressEl.textContent = `${progress}/${unit.words.length}`;
+
+            if (idx === 0) {
                 islandEl.classList.remove('locked');
                 lockEl.style.display = 'none';
             } else {
-                const prevProgress = this.state.islandsProgress[i - 1];
-                if (prevProgress >= 3) {
+                const prevUnit = units[idx - 1];
+                const prevProgress = this.state.islandsProgress[prevUnit.id] || 0;
+                const unlockThreshold = Math.min(3, prevUnit.words.length);
+                if (prevProgress >= unlockThreshold) {
                     islandEl.classList.remove('locked');
                     lockEl.style.display = 'none';
-
-                    // 检查是否刚解锁
-                    if (!this.state.visitedIslands.includes(i)) {
-                        this.showToast(`🎉 解锁新岛屿：${this.islandStories[i].name}！`);
-                    }
                 } else {
                     islandEl.classList.add('locked');
                     lockEl.style.display = 'block';
                 }
             }
-        }
+        });
     }
 
     // 显示 Toast
@@ -470,24 +537,34 @@ class AdventureGame {
 
     // 进入岛屿
     enterIsland(islandId) {
-        if (islandId > 1) {
-            const prevProgress = this.state.islandsProgress[islandId - 1];
-            if (prevProgress < 3) {
+        if (!this.currentGrade) return;
+        const units = this.currentGrade.units;
+        const idx = units.findIndex(u => u.id === islandId);
+        const unit = units[idx];
+        if (!unit) return;
+
+        if (idx > 0) {
+            const prevUnit = units[idx - 1];
+            const prevProgress = this.state.islandsProgress[prevUnit.id] || 0;
+            const unlockThreshold = Math.min(3, prevUnit.words.length);
+            if (prevProgress < unlockThreshold) {
                 this.showGameModal({
                     icon: '🔒',
-                    message: '先完成前面的岛屿吧！<br>字宝宝们需要你的帮助～',
+                    message: '先完成前面的单元吧！<br>字宝宝们需要你的帮助～',
                     buttons: [{ text: '好的', value: true, primary: true }]
                 });
-                this.speakLater('先完成前面的岛屿吧！字宝宝们需要你的帮助！', 200);
+                this.speakLater('先完成前面的单元吧！字宝宝们需要你的帮助！', 200);
                 return;
             }
         }
 
         this.currentIsland = islandId;
-        const islandData = this.islandStories[islandId];
+        this.currentIslandData = unit;
 
-        document.getElementById('level-title').textContent = islandData.name;
-        document.getElementById('story-text').textContent = islandData.story;
+        const storyText = `欢迎来到"${unit.name}"！这里有${unit.words.length}个字宝宝等着你来找。美乐蒂说：'小小英雄，快帮帮它们吧！'`;
+
+        document.getElementById('level-title').textContent = unit.name;
+        document.getElementById('story-text').textContent = storyText;
 
         this.showScreen('level-screen');
         document.getElementById('level-story').style.display = 'block';
@@ -499,7 +576,7 @@ class AdventureGame {
             this.saveState();
         }
 
-        this.speakLater(islandData.story.replace(/\n/g, '') + ' 点击出发找字宝宝！', 300);
+        this.speakLater(storyText + ' 点击出发找字宝宝！', 300);
     }
 
     // 显示游戏类型选择
@@ -537,52 +614,16 @@ class AdventureGame {
     startLevel() {
         this.wordsFoundInSession = 0;
 
-        // 根据当前岛屿获取对应的主题字库
-        // 岛屿1（花花岛）：家庭篇、身体篇 -> level 1, 2
-        // 岛屿2（泡泡海）：数字篇、自然篇·天地 -> level 3, 4
-        // 岛屿3（星星山）：自然篇·山水 -> level 5
-        // 岛屿4（拼图森林）：动物篇、植物篇 -> level 6, 7
-        // 岛屿5（月光城堡）：颜色篇、方向篇、学校篇 -> level 8, 9, 10
-        let levelIds = [];
-        switch(this.currentIsland) {
-            case 1:
-                levelIds = [1, 2]; // 家庭篇、身体篇
-                break;
-            case 2:
-                levelIds = [3, 4]; // 数字篇、自然篇·天地
-                break;
-            case 3:
-                levelIds = [5]; // 自然篇·山水
-                break;
-            case 4:
-                levelIds = [6, 7]; // 动物篇、植物篇
-                break;
-            case 5:
-                levelIds = [8, 9, 10]; // 颜色篇、方向篇、学校篇
-                break;
-            default:
-                levelIds = [1, 2, 3, 4, 5];
-        }
+        if (!this.currentIslandData) return;
 
-        // 从对应主题中获取未找到的字
         const learnedWords = this.state.foundWords;
-        let availableWords = [];
+        let availableWords = this.currentIslandData.words.filter(
+            w => !learnedWords.includes(w.char)
+        );
 
-        levelIds.forEach(levelId => {
-            const level = wordData.getLevel(levelId);
-            if (level) {
-                level.words.forEach(word => {
-                    if (!learnedWords.includes(word.char)) {
-                        availableWords.push(word);
-                    }
-                });
-            }
-        });
-
-        // 如果该岛屿没有未找到的字了，从其他主题补充
         if (availableWords.length === 0) {
-            const allWords = wordData.getAllWords();
-            availableWords = allWords.filter(w => !learnedWords.includes(w.char));
+            const allGradeWords = wordData.getAllWordsForGrade(this.currentGrade.id);
+            availableWords = allGradeWords.filter(w => !learnedWords.includes(w.char));
         }
 
         // 随机打乱并选择最多 3 个字
@@ -670,7 +711,7 @@ class AdventureGame {
         container.style.gap = '24px';
         container.style.padding = '30px 20px 40px';
 
-        const allWords = wordData.getAllWords();
+        const allWords = wordData.getAllWordsForGrade(this.currentGrade ? this.currentGrade.id : "1A");
         const options = [this.targetWord];
 
         while (options.length < 4) {
@@ -731,7 +772,7 @@ class AdventureGame {
 
         gameContent.innerHTML = '';
 
-        const allWords = wordData.getAllWords();
+        const allWords = wordData.getAllWordsForGrade(this.currentGrade ? this.currentGrade.id : "1A");
         const options = [this.targetWord];
 
         while (options.length < 5) {
@@ -834,7 +875,7 @@ class AdventureGame {
         container.appendChild(puzzleContainer);
 
         // 生成部件选项（简化：直接用其他字作为干扰）
-        const allWords = wordData.getAllWords();
+        const allWords = wordData.getAllWordsForGrade(this.currentGrade ? this.currentGrade.id : "1A");
         const pieces = [this.targetWord];
 
         while (pieces.length < 4) {
@@ -916,25 +957,30 @@ class AdventureGame {
         this.updateMap();
         this.updateGameProgress();
 
-        const islandProgress = this.state.islandsProgress[this.currentIsland];
-        const isIslandCompleted = islandProgress >= 5;
+        const islandProgress = this.state.islandsProgress[this.currentIsland] || 0;
+        const totalInIsland = this.currentIslandData ? this.currentIslandData.words.length : 5;
+        const isIslandCompleted = islandProgress >= totalInIsland;
         const sessionComplete = this.wordsFoundInSession >= this.currentWords.length;
-        const allWords = wordData.getAllWords();
+        const allWords = wordData.getAllWordsForGrade(this.currentGrade ? this.currentGrade.id : "1A");
         const hasMoreWords = this.state.foundWords.length < allWords.length;
 
         setTimeout(() => {
             document.getElementById('found-screen').style.display = 'none';
 
             if (isIslandCompleted) {
-                const islandName = this.islandStories[this.currentIsland].name;
+                const islandName = this.currentIslandData ? this.currentIslandData.name : '这个单元';
                 this.speakLater(`太棒了！${islandName}的字宝宝都找到啦！美乐蒂说，小小英雄真厉害！`, 200);
                 this.showGameModal({
                     icon: '🎉',
                     message: `太棒了！<br>${islandName}的字宝宝都找到啦！<br><br>美乐蒂说："小小英雄真厉害！"`,
                     buttons: [{ text: '太棒了！', value: true, primary: true }]
                 }).then(() => {
-                    if (this.currentIsland < 5) {
-                        this.showToast(`🎉 解锁新岛屿：${this.islandStories[this.currentIsland + 1].name}！`);
+                    if (this.currentGrade) {
+                        const units = this.currentGrade.units;
+                        const curIdx = units.findIndex(u => u.id === this.currentIsland);
+                        if (curIdx >= 0 && curIdx < units.length - 1) {
+                            this.showToast(`🎉 解锁新单元：${units[curIdx + 1].name}！`);
+                        }
                     }
                     this.showScreen('map-screen');
                     this.showMapDialogue();
@@ -942,14 +988,14 @@ class AdventureGame {
                 });
 
             } else if (sessionComplete) {
-                const remainingWords = 5 - islandProgress;
+                const remainingWords = totalInIsland - islandProgress;
 
                 if (remainingWords > 0 && hasMoreWords) {
                     const foundChars = this.currentWords.map(w => w.char).join('、');
                     this.speakLater(`太棒了！本轮完成啦！你找到了${foundChars}。还有${remainingWords}个字宝宝等着你哦，要继续玩吗？`, 200);
                     this.showGameModal({
                         icon: '🎉',
-                        message: `太棒了！本轮完成啦！<br><br>找到的字：${foundChars}<br>获得爱心：+${this.currentWords.length * 3} 💖<br><br>${this.islandStories[this.currentIsland].name}还有 ${remainingWords} 个字宝宝等着你哦～`,
+                        message: `太棒了！本轮完成啦！<br><br>找到的字：${foundChars}<br>获得爱心：+${this.currentWords.length * 3} 💖<br><br>${this.currentIslandData ? this.currentIslandData.name : '这个单元'}还有 ${remainingWords} 个字宝宝等着你哦～`,
                         buttons: [
                             { text: '继续玩！', value: true, primary: true },
                             { text: '回地图', value: false, primary: false }
@@ -1026,7 +1072,7 @@ class AdventureGame {
             return;
         }
 
-        const allWords = wordData.getAllWords();
+        const allWords = wordData.getAllWordsForGrade(this.currentGrade ? this.currentGrade.id : "1A");
         const foundWordObjects = allWords.filter(w => this.state.foundWords.includes(w.char));
 
         foundWordObjects.forEach(word => {

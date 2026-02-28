@@ -32,6 +32,15 @@
             </div>
         </div>
 
+        <!-- 年级选择 -->
+        <div id="grade-screen" class="screen">
+            <div class="grade-content">
+                <h2 class="grade-title">📚 选择课本</h2>
+                <div class="grade-grid" id="grade-grid"></div>
+                <button class="btn-back-map" id="btn-back-intro" style="margin-top:20px;">← 回到地图</button>
+            </div>
+        </div>
+
         <!-- 游戏地图 -->
         <div id="map-screen" class="screen">
             <!-- 顶部栏 -->
@@ -53,45 +62,7 @@
                 <!-- 动态路径 Canvas -->
                 <canvas id="path-canvas" class="path-canvas"></canvas>
 
-                <!-- 岛屿 1：花花岛 -->
-                <div class="island" data-island="1" id="island-1">
-                    <div class="island-sprite">🌸</div>
-                    <div class="island-name">花花岛</div>
-                    <div class="island-progress" id="island-1-progress">0/5</div>
-                    <div class="island-lock" id="island-1-lock">🔒</div>
-                </div>
-
-                <!-- 岛屿 2：泡泡海 -->
-                <div class="island" data-island="2" id="island-2">
-                    <div class="island-sprite">🫧</div>
-                    <div class="island-name">泡泡海</div>
-                    <div class="island-progress" id="island-2-progress">0/5</div>
-                    <div class="island-lock" id="island-2-lock">🔒</div>
-                </div>
-
-                <!-- 岛屿 3：星星山 -->
-                <div class="island" data-island="3" id="island-3">
-                    <div class="island-sprite">⭐</div>
-                    <div class="island-name">星星山</div>
-                    <div class="island-progress" id="island-3-progress">0/5</div>
-                    <div class="island-lock" id="island-3-lock">🔒</div>
-                </div>
-
-                <!-- 岛屿 4：拼图森林 -->
-                <div class="island" data-island="4" id="island-4">
-                    <div class="island-sprite">🧩</div>
-                    <div class="island-name">拼图森林</div>
-                    <div class="island-progress" id="island-4-progress">0/5</div>
-                    <div class="island-lock" id="island-4-lock">🔒</div>
-                </div>
-
-                <!-- 岛屿 5：月光城堡 -->
-                <div class="island boss-island" data-island="5" id="island-5">
-                    <div class="island-sprite">🌙</div>
-                    <div class="island-name">月光城堡</div>
-                    <div class="island-progress" id="island-5-progress">0/5</div>
-                    <div class="island-lock" id="island-5-lock">🔒</div>
-                </div>
+                <!-- 岛屿由 JS 动态生成 -->
 
                 <!-- 装饰元素：云朵 -->
                 <div class="cloud cloud-1">☁️</div>
@@ -117,6 +88,9 @@
                 </button>
                 <button class="btn-backpack" id="btn-backpack">
                     🎒 我的背包
+                </button>
+                <button class="btn-castle" id="btn-switch-grade" style="grid-column: 1/-1;">
+                    📚 换课本
                 </button>
             </div>
         </div>
