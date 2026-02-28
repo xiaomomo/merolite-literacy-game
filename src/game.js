@@ -409,9 +409,14 @@ class AdventureGame {
             this.showGameTypeSelect();
         });
 
-        // 学习阶段完成
+        // 学习阶段：下一个字 / 开始玩
         document.getElementById('btn-learn-done').addEventListener('click', () => {
-            this.beginGamePlay();
+            if (this._learnWords && this._learnIndex < this._learnWords.length - 1) {
+                this._learnIndex++;
+                this.showLearnCard();
+            } else {
+                this.beginGamePlay();
+            }
         });
 
         // 游戏类型选择
@@ -674,81 +679,85 @@ class AdventureGame {
         }
     }
 
-    // 先学后玩：学习阶段
+    // 先学后玩：逐字学习
     showLearnPhase(words) {
+        this._learnWords = words;
+        this._learnIndex = 0;
+        this.showLearnCard();
+    }
+
+    showLearnCard() {
+        const words = this._learnWords;
+        const idx = this._learnIndex;
+        if (idx >= words.length) { this.beginGamePlay(); return; }
+
+        const word = words[idx];
+        const isLast = idx === words.length - 1;
+
         document.getElementById('level-story').style.display = 'none';
         document.getElementById('game-type-select').style.display = 'none';
         document.getElementById('game-area').style.display = 'none';
         const learnEl = document.getElementById('learn-phase');
         learnEl.style.display = 'block';
 
+        document.querySelector('.learn-title').textContent =
+            `📖 第 ${idx + 1}/${words.length} 个字宝宝`;
+
         const cardsEl = document.getElementById('learn-cards');
         cardsEl.innerHTML = '';
 
-        words.forEach(word => {
-            const card = document.createElement('div');
-            card.className = 'learn-card-full';
+        const card = document.createElement('div');
+        card.className = 'learn-card-full';
 
-            const strokeId = `stroke-${word.char}-${Date.now()}`;
-            const imgId = `img-${word.char}-${Date.now()}`;
+        const strokeId = `stroke-${Date.now()}`;
+        const imgId = `img-${Date.now()}`;
 
-            card.innerHTML = `
-                <div class="lcf-top">
-                    <div class="lcf-stroke" id="${strokeId}"></div>
-                    <div class="lcf-img" id="${imgId}"><span class="lcf-img-loading">🎨</span></div>
-                </div>
-                <div class="lcf-info">
-                    <span class="lcf-char">${word.char}</span>
-                    <span class="lcf-pinyin">${word.pinyin}</span>
-                    <span class="lcf-word">${word.word || ''}</span>
-                </div>
-                <button class="lcf-play-btn">🔊 听一听</button>
-            `;
+        card.innerHTML = `
+            <div class="lcf-top">
+                <div class="lcf-stroke" id="${strokeId}"></div>
+                <div class="lcf-img" id="${imgId}"><span class="lcf-img-loading">🎨</span></div>
+            </div>
+            <div class="lcf-info">
+                <span class="lcf-char">${word.char}</span>
+                <span class="lcf-pinyin">${word.pinyin}</span>
+                <span class="lcf-word">${word.word || ''}</span>
+            </div>
+            <button class="lcf-play-btn">🔊 听一听</button>
+        `;
 
-            card.querySelector('.lcf-play-btn').addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.speak(`${word.char}，${word.pinyin}，${word.word || ''}`);
-            });
-
-            cardsEl.appendChild(card);
-
-            // 笔画动画
-            setTimeout(() => {
-                try {
-                    const writer = HanziWriter.create(strokeId, word.char, {
-                        width: 120, height: 120,
-                        padding: 5,
-                        strokeAnimationSpeed: 0.8,
-                        delayBetweenStrokes: 300,
-                        strokeColor: '#FF69B4',
-                        radicalColor: '#FF69B4',
-                        outlineColor: '#FFD1DC',
-                        drawingColor: '#FF69B4',
-                    });
-                    writer.animateCharacter();
-                    card.querySelector('.lcf-stroke').addEventListener('click', () => {
-                        writer.animateCharacter();
-                    });
-                } catch (e) { /* hanzi-writer 不支持的字直接跳过 */ }
-            }, 100);
-
-            // AI 配图（异步加载，不阻塞）
-            const imgEl = document.getElementById(imgId);
-            fetch(`/api/illustration/${encodeURIComponent(word.char)}?word=${encodeURIComponent(word.word || word.char)}`)
-                .then(res => {
-                    if (!res.ok) throw new Error('no image');
-                    return res.blob();
-                })
-                .then(blob => {
-                    const url = URL.createObjectURL(blob);
-                    imgEl.innerHTML = `<img src="${url}" alt="${word.char}" />`;
-                })
-                .catch(() => {
-                    imgEl.innerHTML = `<span class="lcf-img-placeholder">${word.char}</span>`;
-                });
+        card.querySelector('.lcf-play-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.speak(`${word.char}，${word.pinyin}，${word.word || ''}`);
         });
+        cardsEl.appendChild(card);
 
-        this.speakLater(`先来认识这${words.length}个字宝宝吧！看笔画动画，听发音，还有美乐蒂的配图哦！`, 300);
+        // 更新底部按钮
+        const doneBtn = document.getElementById('btn-learn-done');
+        doneBtn.textContent = isLast ? '✅ 认识了，开始玩！' : '👉 下一个字';
+
+        // 笔画动画
+        setTimeout(() => {
+            try {
+                const writer = HanziWriter.create(strokeId, word.char, {
+                    width: 150, height: 150, padding: 5,
+                    strokeAnimationSpeed: 0.8, delayBetweenStrokes: 300,
+                    strokeColor: '#FF69B4', radicalColor: '#FF69B4',
+                    outlineColor: '#FFD1DC', drawingColor: '#FF69B4',
+                });
+                writer.animateCharacter();
+                document.getElementById(strokeId).addEventListener('click', () => writer.animateCharacter());
+            } catch {}
+        }, 100);
+
+        // AI 配图
+        const imgEl = document.getElementById(imgId);
+        fetch(`/api/illustration/${encodeURIComponent(word.char)}?word=${encodeURIComponent(word.word || word.char)}`)
+            .then(r => r.ok ? r.blob() : Promise.reject())
+            .then(blob => { imgEl.innerHTML = `<img src="${URL.createObjectURL(blob)}" alt="${word.char}" />`; })
+            .catch(() => { imgEl.innerHTML = `<span class="lcf-img-placeholder">${word.char}</span>`; });
+
+        // 自动朗读
+        this.speakLater(`${word.char}，${word.pinyin}，${word.word || ''}`, 400);
     }
 
     // 从学习阶段进入游戏

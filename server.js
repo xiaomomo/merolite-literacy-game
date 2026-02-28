@@ -174,7 +174,7 @@ app.get('/api/illustration/:char', async (req, res) => {
   }
 
   const word = req.query.word || char;
-  const prompt = `可爱的卡通美乐蒂粉色兔子角色和"${word}"在一起，粉色系，儿童绘本插画风格，画面中有一个大大的中文汉字"${char}"，画面体现"${word}"的含义，温暖明亮，可爱卡通`;
+  const prompt = `一只三丽鸥风格的My Melody美乐蒂兔子角色——粉色头巾、蓝色蝴蝶结、白色圆脸、棕色椭圆形眼睛、小黄鼻子、白色身体——和"${word}"的场景在一起。画面中有一个醒目的粉色中文汉字"${char}"。画面生动体现"${word}"的含义。儿童绘本插画风格，粉色系，温暖明亮，可爱卡通，简洁背景`;
 
   try {
     const createRes = await fetch(WANX_API_URL, {
