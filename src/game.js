@@ -440,6 +440,7 @@ class AdventureGame {
 
     // 显示屏幕
     showScreen(screenId) {
+        this.stopSpeaking();
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById(screenId).classList.add('active');
 
@@ -1078,7 +1079,7 @@ class AdventureGame {
                     card.style.opacity = '0.4';
                     card.style.filter = 'grayscale(0.6)';
                     this.speak('不对哦，再听一次');
-                    setTimeout(() => this.speak(this.targetWord.char), 1500);
+                    this.speakLater(this.targetWord.char, 1500);
                 }
             });
             grid.appendChild(card);
@@ -1086,7 +1087,7 @@ class AdventureGame {
 
         container.appendChild(grid);
 
-        setTimeout(() => this.speak(this.targetWord.char), 500);
+        this.speakLater(this.targetWord.char, 500);
     }
 
     // 显示找到字宝宝界面
@@ -1446,16 +1447,24 @@ class AdventureGame {
         }, 300);
     }
 
+    // 停止所有语音
+    stopSpeaking() {
+        clearTimeout(this._speakTimer);
+        this._speakTimer = null;
+        if (this._currentAudio) {
+            this._currentAudio.pause();
+            this._currentAudio.currentTime = 0;
+            this._currentAudio = null;
+        }
+        if ('speechSynthesis' in window) speechSynthesis.cancel();
+    }
+
     // 语音朗读（优先 Qwen TTS，失败时回退浏览器合成）
     speak(text) {
         const clean = text.replace(/<[^>]*>/g, '').replace(/\n/g, '，').trim();
         if (!clean) return;
 
-        if (this._currentAudio) {
-            this._currentAudio.pause();
-            this._currentAudio = null;
-        }
-        if ('speechSynthesis' in window) speechSynthesis.cancel();
+        this.stopSpeaking();
 
         fetch('/api/tts', {
             method: 'POST',
@@ -1484,9 +1493,10 @@ class AdventureGame {
         });
     }
 
-    // 延迟朗读
+    // 延迟朗读（自动取消之前的延迟）
     speakLater(text, delay = 300) {
-        setTimeout(() => this.speak(text), delay);
+        clearTimeout(this._speakTimer);
+        this._speakTimer = setTimeout(() => this.speak(text), delay);
     }
 
     // 播放音效
