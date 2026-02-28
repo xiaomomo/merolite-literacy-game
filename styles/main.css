@@ -877,26 +877,164 @@ body {
     }
 }
 
-@media (max-width: 600px) {
+/* ==================== iPhone 适配 ==================== */
+@media (max-width: 480px) {
+
+    body {
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    #game-container {
+        padding: 10px;
+    }
+
+    /* 开场 */
+    .game-title { font-size: 1.8rem; margin-bottom: 15px; }
+    .intro-content { padding: 20px 15px; border-radius: 20px; border-width: 3px; }
+    .intro-story { font-size: 1.05rem; line-height: 1.8; padding: 15px; margin-bottom: 15px; }
+    .intro-story .highlight { font-size: 1.2rem; }
+    .btn-start-adventure { font-size: 1.4rem; padding: 16px 40px; }
+
+    /* 顶部栏 */
+    .top-bar { padding: 10px 15px; margin-bottom: 12px; border-radius: 15px; }
+    .adventure-day, .love-points { font-size: 1.1rem; }
+
+    /* 地图 */
     .map-area {
-        min-height: 500px;
-        gap: 20px;
-        padding-top: 60px;
+        min-height: 380px;
+        gap: 12px;
+        padding: 50px 10px 15px;
+        border-radius: 18px;
+        border-width: 3px;
     }
+    .map-title { font-size: 1.3rem; margin-bottom: 10px; }
+    .island { width: 85px; }
+    .island-sprite { font-size: 2.8rem; }
+    .island-name { font-size: 0.9rem; padding: 3px 10px; }
+    .island-progress { font-size: 0.75rem; padding: 2px 8px; }
+    .island-lock { font-size: 1.4rem; }
+    .boss-island .island-sprite { font-size: 3.5rem; }
 
-    .island {
-        width: 100px;
-    }
+    /* 美乐蒂对话 */
+    .merody-dialogue { padding: 12px; margin-top: 12px; border-radius: 18px; gap: 10px; }
+    .merody-avatar { font-size: 2.5rem; }
+    .dialogue-bubble { font-size: 1rem; padding: 10px 15px; }
 
-    .level-header h2,
-    .castle-header h2,
-    .backpack-header h2 {
-        font-size: 1.4rem;
-    }
+    /* 底部按钮 */
+    .bottom-buttons { gap: 10px; margin-top: 12px; }
+    .btn-castle, .btn-backpack { font-size: 1.1rem; padding: 14px 15px; border-radius: 15px; }
 
-    .game-type-cards {
-        grid-template-columns: 1fr;
+    /* 关卡页 */
+    .level-header { margin-bottom: 12px; }
+    .level-header h2, .castle-header h2, .backpack-header h2, .shop-header h2 {
+        font-size: 1.3rem;
+        margin-right: 40px;
     }
+    .btn-back-map { padding: 8px 14px; font-size: 1rem; }
+
+    /* 故事 */
+    .level-story { padding: 20px 15px; border-radius: 18px; }
+    .merody-avatar.big { font-size: 4rem; }
+    .story-text { font-size: 1.1rem; padding: 15px; margin: 15px 0 20px; }
+    .btn-start-level { font-size: 1.3rem; padding: 14px 30px; }
+
+    /* 游戏选择 — 横向三列但尺寸更紧凑 */
+    .game-type-select { padding: 15px 10px; }
+    .select-title { font-size: 1.2rem; margin-bottom: 15px; }
+    .game-type-cards { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .game-type-card { padding: 15px 8px; border-radius: 15px; border-width: 2px; }
+    .type-icon { font-size: 2.5rem; margin-bottom: 6px; }
+    .game-type-card h4 { font-size: 0.95rem; }
+    .game-type-card p { font-size: 0.75rem; }
+
+    /* 游戏区域 */
+    .game-area { padding: 15px; min-height: auto; border-radius: 18px; }
+    .game-header { margin-bottom: 10px; }
+    .btn-back-game { padding: 6px 12px; font-size: 0.95rem; }
+    .game-progress { font-size: 1rem; padding: 6px 12px; }
+    .game-instruction { font-size: 1.1rem; padding: 12px; margin-bottom: 15px; border-radius: 15px; }
+
+    /* 捉迷藏卡片 — 2x2 网格 */
+    .game-card-large {
+        width: 130px;
+        height: 145px;
+    }
+    .game-card-large .char { font-size: 3.5rem; }
+    .game-card-large .card-deco { font-size: 1.2rem; }
+    .game-card-large .card-face { font-size: 1.4rem; bottom: -14px; }
+
+    /* 场景装饰 */
+    .game-scene { height: 100px; margin-top: 10px; }
+    .scene-cloud { font-size: 1.4rem; }
+    .scene-sun { font-size: 1.6rem; }
+    .scene-item.si1, .scene-item.si2, .scene-item.si3,
+    .scene-item.si4, .scene-item.si5 { font-size: 1.2rem; }
+    .scene-item.si6 { font-size: 1.1rem; bottom: 25px; }
+    .scene-item.si7 { font-size: 0.9rem; }
+
+    /* 泡泡游戏 */
+    .game-content { min-height: 280px; }
+
+    /* 拼图游戏 */
+    .puzzle-piece { width: 75px; height: 75px; font-size: 2.2rem; }
+    .puzzle-board { width: 170px; height: 90px; }
+    .puzzle-slot { width: 70px; height: 80px; font-size: 2.2rem; }
+
+    /* 找到字宝宝弹层 */
+    .found-content { padding: 25px 15px; border-radius: 22px; }
+    .word-bubble { width: 130px; height: 130px; }
+    .found-char { font-size: 4.5rem; }
+    .found-title { font-size: 1.8rem; }
+    .found-message { font-size: 1.05rem; margin-bottom: 15px; }
+    .found-reward { font-size: 1.2rem; padding: 10px 20px; margin-bottom: 20px; }
+    .reward-heart { font-size: 1.8rem; }
+    .btn-send-home { font-size: 1.2rem; padding: 14px 35px; }
+
+    /* 每日奖励 */
+    .daily-reward-content { padding: 30px 15px; }
+    .daily-reward-content h2 { font-size: 1.8rem; }
+    .gift-box { font-size: 6rem; }
+    .daily-message { font-size: 1.1rem; }
+    .btn-open-gift { font-size: 1.2rem; padding: 14px 35px; }
+
+    /* 城堡 */
+    .castle-content { padding: 15px; border-radius: 18px; }
+    .castle-view { padding: 15px; }
+    .castle-sprite { font-size: 5rem; }
+    .castle-info { font-size: 1.1rem; }
+    .words-grid { grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap: 8px; }
+    .castle-word-card .char { font-size: 2rem; }
+    .castle-word-card .pinyin { font-size: 0.7rem; }
+
+    /* 背包 */
+    .backpack-content { padding: 15px; border-radius: 18px; }
+    .love-display { padding: 15px; }
+    .love-icon { font-size: 2.2rem; }
+    .love-count { font-size: 2.2rem; }
+    .stickers-grid { grid-template-columns: repeat(5, 1fr); }
+    .sticker-item { font-size: 2rem; }
+    .stat-row { font-size: 1rem; padding: 10px 0; }
+
+    /* 商店 */
+    .shop-content { padding: 15px; border-radius: 18px; }
+    .shop-grid { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .shop-item { padding: 12px 8px; border-radius: 15px; }
+    .shop-item-icon { font-size: 2.5rem; }
+    .shop-item-name { font-size: 0.9rem; }
+    .shop-item-price { font-size: 1rem; }
+
+    /* 弹窗 */
+    .game-modal-content { padding: 25px 18px; border-radius: 22px; border-width: 3px; }
+    .game-modal-icon { font-size: 3.5rem; }
+    .game-modal-message { font-size: 1.05rem; padding: 12px; }
+    .game-modal-btn { font-size: 1.1rem; padding: 12px 25px; min-width: 100px; }
+
+    /* Toast */
+    .toast { font-size: 1.05rem; padding: 10px 20px; }
+
+    /* 云朵/小鸟 */
+    .cloud { font-size: 2rem; }
 }
 
 /* ==================== Canvas 元素 ==================== */
