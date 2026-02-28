@@ -921,7 +921,8 @@ class AdventureGame {
         foundScreen.style.display = 'flex';
 
         document.getElementById('found-char').textContent = word.char;
-        const msg = `"${word.char}"字宝宝说："谢谢你找到我！我的家是${word.group}～"`;
+        const wordGroup = word.word || word.group || '';
+        const msg = `"${word.char}"字宝宝说："谢谢你找到我！我的组词是${wordGroup}～"`;
         document.getElementById('found-message').textContent = msg;
 
         this.foundWordData = word;
@@ -1175,12 +1176,14 @@ class AdventureGame {
     showWordDetail(word) {
         this.speak(word.char);
         setTimeout(() => {
+            const w = word.word || word.group || '';
+            const ex = word.example || '';
             this.showGameModal({
                 icon: word.char,
-                message: `<b>${word.pinyin}</b><br><br>组词：${word.group}<br>例句：${word.example}`,
+                message: `<b>${word.pinyin}</b><br><br>组词：${w}${ex ? '<br>例句：' + ex : ''}`,
                 buttons: [{ text: '知道了', value: true, primary: true }]
             });
-            this.speakLater(`${word.char}，${word.pinyin}。组词：${word.group}。${word.example}。`, 200);
+            this.speakLater(`${word.char}，${word.pinyin}。组词：${w}。${ex}`, 200);
         }, 300);
     }
 
