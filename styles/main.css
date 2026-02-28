@@ -1278,12 +1278,113 @@ body {
     animation: pulse 2s infinite;
 }
 
+/* 完整学习卡（笔画+配图） */
+.learn-card-full {
+    background: var(--white);
+    border: 3px solid var(--pink-medium);
+    border-radius: 20px;
+    padding: 15px;
+    width: 280px;
+    text-align: center;
+    box-shadow: 0 4px 15px var(--shadow);
+}
+
+.lcf-top {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.lcf-stroke {
+    width: 120px;
+    height: 120px;
+    background: var(--pink-light);
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.lcf-stroke svg { display: block; }
+
+.lcf-img {
+    width: 120px;
+    height: 120px;
+    border-radius: 15px;
+    overflow: hidden;
+    background: var(--pink-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.lcf-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 12px;
+}
+
+.lcf-img-loading {
+    font-size: 2rem;
+    animation: pulse 1.5s infinite;
+}
+
+.lcf-img-placeholder {
+    font-size: 3rem;
+    color: var(--pink-dark);
+}
+
+.lcf-info {
+    margin-bottom: 10px;
+}
+
+.lcf-char {
+    font-size: 2rem;
+    color: var(--pink-dark);
+    font-weight: bold;
+    margin-right: 8px;
+}
+
+.lcf-pinyin {
+    font-size: 1.1rem;
+    color: var(--text-dark);
+    margin-right: 8px;
+}
+
+.lcf-word {
+    font-size: 1rem;
+    color: var(--text-light);
+}
+
+.lcf-play-btn {
+    background: linear-gradient(135deg, var(--pink-dark), var(--pink-medium));
+    color: var(--white);
+    border: none;
+    padding: 8px 20px;
+    font-size: 1rem;
+    border-radius: 20px;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.lcf-play-btn:active { transform: scale(0.95); }
+
 @media (max-width: 480px) {
     .learn-phase { padding: 18px 12px; }
     .learn-title { font-size: 1.2rem; }
     .learn-card { width: 90px; padding: 10px 8px; }
     .learn-card .lc-char { font-size: 2.8rem; }
     .learn-card .lc-pinyin { font-size: 0.85rem; }
+    .learn-card-full { width: 100%; padding: 12px; }
+    .lcf-stroke { width: 100px; height: 100px; }
+    .lcf-img { width: 100px; height: 100px; }
+    .lcf-char { font-size: 1.6rem; }
 }
 
 /* ==================== 游戏选择卡片 ==================== */

@@ -687,20 +687,68 @@ class AdventureGame {
 
         words.forEach(word => {
             const card = document.createElement('div');
-            card.className = 'learn-card';
+            card.className = 'learn-card-full';
+
+            const strokeId = `stroke-${word.char}-${Date.now()}`;
+            const imgId = `img-${word.char}-${Date.now()}`;
+
             card.innerHTML = `
-                <span class="lc-char">${word.char}</span>
-                <span class="lc-pinyin">${word.pinyin}</span>
-                <span class="lc-word">${word.word || ''}</span>
+                <div class="lcf-top">
+                    <div class="lcf-stroke" id="${strokeId}"></div>
+                    <div class="lcf-img" id="${imgId}"><span class="lcf-img-loading">🎨</span></div>
+                </div>
+                <div class="lcf-info">
+                    <span class="lcf-char">${word.char}</span>
+                    <span class="lcf-pinyin">${word.pinyin}</span>
+                    <span class="lcf-word">${word.word || ''}</span>
+                </div>
+                <button class="lcf-play-btn">🔊 听一听</button>
             `;
-            card.addEventListener('click', () => {
-                card.classList.add('tapped');
+
+            card.querySelector('.lcf-play-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
                 this.speak(`${word.char}，${word.pinyin}，${word.word || ''}`);
             });
+
             cardsEl.appendChild(card);
+
+            // 笔画动画
+            setTimeout(() => {
+                try {
+                    const writer = HanziWriter.create(strokeId, word.char, {
+                        width: 120, height: 120,
+                        padding: 5,
+                        strokeAnimationSpeed: 0.8,
+                        delayBetweenStrokes: 300,
+                        strokeColor: '#FF69B4',
+                        radicalColor: '#FF69B4',
+                        outlineColor: '#FFD1DC',
+                        drawingColor: '#FF69B4',
+                    });
+                    writer.animateCharacter();
+                    card.querySelector('.lcf-stroke').addEventListener('click', () => {
+                        writer.animateCharacter();
+                    });
+                } catch (e) { /* hanzi-writer 不支持的字直接跳过 */ }
+            }, 100);
+
+            // AI 配图（异步加载，不阻塞）
+            const imgEl = document.getElementById(imgId);
+            fetch(`/api/illustration/${encodeURIComponent(word.char)}?word=${encodeURIComponent(word.word || word.char)}`)
+                .then(res => {
+                    if (!res.ok) throw new Error('no image');
+                    return res.blob();
+                })
+                .then(blob => {
+                    const url = URL.createObjectURL(blob);
+                    imgEl.innerHTML = `<img src="${url}" alt="${word.char}" />`;
+                })
+                .catch(() => {
+                    imgEl.innerHTML = `<span class="lcf-img-placeholder">${word.char}</span>`;
+                });
         });
 
-        this.speakLater(`先来认识这${words.length}个字宝宝吧！点一下听听它们怎么读。`, 300);
+        this.speakLater(`先来认识这${words.length}个字宝宝吧！看笔画动画，听发音，还有美乐蒂的配图哦！`, 300);
     }
 
     // 从学习阶段进入游戏

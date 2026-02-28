@@ -155,6 +155,82 @@ app.post('/api/tts', async (req, res) => {
   }
 });
 
+// ── AI 配图 (通义万相) ──────────────────────────────────
+
+const IMG_CACHE_DIR = process.env.IMG_CACHE_DIR || path.join(__dirname, 'img-cache');
+fs.mkdirSync(IMG_CACHE_DIR, { recursive: true });
+
+const WANX_API_URL = 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis';
+const WANX_TASK_URL = 'https://dashscope.aliyuncs.com/api/v1/tasks';
+
+app.get('/api/illustration/:char', async (req, res) => {
+  const char = req.params.char;
+  if (!char || char.length !== 1) return res.status(400).json({ error: '需要单个汉字' });
+  if (!DASHSCOPE_API_KEY) return res.status(503).json({ error: '未配置 API Key' });
+
+  const cacheFile = path.join(IMG_CACHE_DIR, `${char}.png`);
+  if (fs.existsSync(cacheFile)) {
+    return res.sendFile(cacheFile);
+  }
+
+  const word = req.query.word || char;
+  const prompt = `可爱的卡通美乐蒂粉色兔子角色和"${word}"在一起，粉色系，儿童绘本插画风格，画面中有一个大大的中文汉字"${char}"，画面体现"${word}"的含义，温暖明亮，可爱卡通`;
+
+  try {
+    const createRes = await fetch(WANX_API_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${DASHSCOPE_API_KEY}`,
+        'Content-Type': 'application/json',
+        'X-DashScope-Async': 'enable',
+      },
+      body: JSON.stringify({
+        model: 'wanx2.1-t2i-turbo',
+        input: { prompt },
+        parameters: { size: '512*512', n: 1 },
+      }),
+    });
+
+    const createData = await createRes.json();
+    const taskId = createData.output?.task_id;
+    if (!taskId) {
+      console.error('Illustration create error:', JSON.stringify(createData));
+      return res.status(502).json({ error: '创建图片任务失败' });
+    }
+
+    const maxWait = 30000;
+    const start = Date.now();
+    while (Date.now() - start < maxWait) {
+      await new Promise(r => setTimeout(r, 2000));
+      const pollRes = await fetch(`${WANX_TASK_URL}/${taskId}`, {
+        headers: { 'Authorization': `Bearer ${DASHSCOPE_API_KEY}` },
+      });
+      const pollData = await pollRes.json();
+      const status = pollData.output?.task_status;
+
+      if (status === 'SUCCEEDED') {
+        const imgUrl = pollData.output?.results?.[0]?.url;
+        if (imgUrl) {
+          const imgRes = await fetch(imgUrl);
+          const imgBuf = Buffer.from(await imgRes.arrayBuffer());
+          fs.writeFileSync(cacheFile, imgBuf);
+          res.set('Content-Type', 'image/png');
+          return res.send(imgBuf);
+        }
+        return res.status(502).json({ error: '无法获取图片 URL' });
+      }
+      if (status === 'FAILED') {
+        console.error('Illustration task failed:', JSON.stringify(pollData).slice(0, 300));
+        return res.status(502).json({ error: '图片生成失败' });
+      }
+    }
+    res.status(504).json({ error: '图片生成超时' });
+  } catch (err) {
+    console.error('Illustration error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── Start ────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`🌸 美乐蒂识字大冒险 服务器已启动: http://localhost:${PORT}`);

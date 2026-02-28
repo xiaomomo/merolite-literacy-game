@@ -30,6 +30,9 @@ game.db-shm
 
 # TTS cache
 tts-cache/
+
+# Image cache
+img-cache/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
