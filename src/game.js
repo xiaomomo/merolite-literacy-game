@@ -149,6 +149,12 @@ class AdventureGame {
         this.updateMap();
         if (!silent) this.showMapDialogue();
         this.animatePath();
+
+        // 预加载地图页常用语音
+        this.prefetch([
+            '选择你喜欢的游戏吧！捉迷藏，泡泡消除，拼图识字，还是听音选字？',
+            '好的，玩捉迷藏！', '好的，玩泡泡消除！', '好的，玩拼图识字！', '好的，玩听音选字！',
+        ]);
     }
 
     buildMapForGrade() {
@@ -588,6 +594,10 @@ class AdventureGame {
         }
 
         this.speakLater(storyText + ' 点击出发找字宝宝！', 300);
+
+        // 预加载本单元字的发音
+        const unitWords = this.currentIslandData.words.slice(0, 10);
+        this.prefetch(unitWords.map(w => `${w.char}，${w.pinyin}，${w.word || ''}`));
     }
 
     // 显示游戏类型选择
@@ -759,6 +769,12 @@ class AdventureGame {
 
         // 自动朗读
         this.speakLater(`${word.char}，${word.pinyin}，${word.word || ''}`, 400);
+
+        // 预加载下一个字的发音
+        if (idx + 1 < words.length) {
+            const next = words[idx + 1];
+            this.prefetch(`${next.char}，${next.pinyin}，${next.word || ''}`);
+        }
     }
 
     // 从学习阶段进入游戏
@@ -1112,7 +1128,15 @@ class AdventureGame {
         fetch(`/api/personal-illustration/${encodeURIComponent(word.char)}?word=${encodeURIComponent(word.word || word.char)}`)
             .catch(() => {});
 
-        this.speakLater(`找到啦！${word.char}，${word.pinyin}，${wordGroup}。点击送字宝宝回家吧！`, 300);
+        const foundText = `找到啦！${word.char}，${word.pinyin}，${wordGroup}。点击送字宝宝回家吧！`;
+        this.speakLater(foundText, 300);
+
+        // 预加载下一轮可能需要的语音
+        const nextIdx = this.wordsFoundInSession;
+        if (nextIdx < this.currentWords.length) {
+            const nw = this.currentWords[nextIdx];
+            this.prefetch(`请找到${nw.char}字`);
+        }
     }
 
     // 送字宝宝回家
@@ -1447,7 +1471,8 @@ class AdventureGame {
         }, 300);
     }
 
-    // 停止所有语音
+    // ── 语音系统（预加载 + 内存缓存） ───────────────
+
     stopSpeaking() {
         clearTimeout(this._speakTimer);
         this._speakTimer = null;
@@ -1459,41 +1484,72 @@ class AdventureGame {
         if ('speechSynthesis' in window) speechSynthesis.cancel();
     }
 
-    // 语音朗读（优先 Qwen TTS，失败时回退浏览器合成）
-    speak(text) {
-        const clean = text.replace(/<[^>]*>/g, '').replace(/\n/g, '，').trim();
-        if (!clean) return;
+    _cleanText(text) {
+        return text.replace(/<[^>]*>/g, '').replace(/\n/g, '，').trim();
+    }
 
+    // 预加载：后台下载音频到内存缓存，不播放
+    prefetch(texts) {
+        if (!this._audioCache) this._audioCache = new Map();
+        const list = Array.isArray(texts) ? texts : [texts];
+        list.forEach(raw => {
+            const t = this._cleanText(raw);
+            if (!t || this._audioCache.has(t)) return;
+            this._audioCache.set(t, null); // 占位防重复请求
+            fetch('/api/tts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: t }),
+            })
+            .then(r => r.ok ? r.blob() : Promise.reject())
+            .then(blob => this._audioCache.set(t, blob))
+            .catch(() => this._audioCache.delete(t));
+        });
+    }
+
+    // 播放：优先内存缓存 → 请求API → 浏览器合成
+    speak(text) {
+        const clean = this._cleanText(text);
+        if (!clean) return;
         this.stopSpeaking();
+        if (!this._audioCache) this._audioCache = new Map();
+
+        const cached = this._audioCache.get(clean);
+        if (cached instanceof Blob) {
+            this._playBlob(cached);
+            return;
+        }
 
         fetch('/api/tts', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ text: clean }),
         })
-        .then(res => {
-            if (!res.ok) throw new Error('TTS API unavailable');
-            return res.blob();
+        .then(r => {
+            if (!r.ok) throw new Error();
+            return r.blob();
         })
         .then(blob => {
-            const url = URL.createObjectURL(blob);
-            const audio = new Audio(url);
-            audio.onended = () => URL.revokeObjectURL(url);
-            this._currentAudio = audio;
-            audio.play();
+            this._audioCache.set(clean, blob);
+            this._playBlob(blob);
         })
         .catch(() => {
             if ('speechSynthesis' in window) {
-                const utterance = new SpeechSynthesisUtterance(clean);
-                utterance.lang = 'zh-CN';
-                utterance.rate = 0.85;
-                utterance.pitch = 1.2;
-                speechSynthesis.speak(utterance);
+                const u = new SpeechSynthesisUtterance(clean);
+                u.lang = 'zh-CN'; u.rate = 0.85; u.pitch = 1.2;
+                speechSynthesis.speak(u);
             }
         });
     }
 
-    // 延迟朗读（自动取消之前的延迟）
+    _playBlob(blob) {
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+        audio.onended = () => URL.revokeObjectURL(url);
+        this._currentAudio = audio;
+        audio.play();
+    }
+
     speakLater(text, delay = 300) {
         clearTimeout(this._speakTimer);
         this._speakTimer = setTimeout(() => this.speak(text), delay);

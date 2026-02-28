@@ -306,11 +306,49 @@ app.get('/api/personal-illustration/:char', async (req, res) => {
   }
 });
 
+// ── TTS 批量预热 ────────────────────────────────────────
+
+const STATIC_PHRASES = [
+  '选择你要学习的课本吧！',
+  '选择你喜欢的游戏吧！捉迷藏，泡泡消除，拼图识字，还是听音选字？',
+  '好的，玩捉迷藏！', '好的，玩泡泡消除！', '好的，玩拼图识字！', '好的，玩听音选字！',
+  '每日惊喜！美乐蒂给你准备了小礼物！快点击打开礼物吧！',
+  '再试试', '不对哦', '不对哦，再听一次', '出发！',
+  '先完成前面的单元吧！字宝宝们需要你的帮助！',
+  '爱心不够呢，继续冒险赚爱心吧！',
+  '找到啦！', '点击送字宝宝回家吧！',
+];
+
+async function prewarmTts() {
+  if (!DASHSCOPE_API_KEY) return;
+  let warmed = 0;
+  for (const text of STATIC_PHRASES) {
+    const hash = crypto.createHash('md5').update(text).digest('hex');
+    const file = path.join(TTS_CACHE_DIR, `${hash}.wav`);
+    if (fs.existsSync(file)) { warmed++; continue; }
+    try {
+      const r = await fetch(TTS_API_URL, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${DASHSCOPE_API_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: 'qwen3-tts-flash', input: { text }, parameters: { voice: TTS_VOICE } }),
+      });
+      const d = await r.json();
+      if (d.output?.audio?.url) {
+        const ar = await fetch(d.output.audio.url);
+        fs.writeFileSync(file, Buffer.from(await ar.arrayBuffer()));
+        warmed++;
+      }
+    } catch {}
+  }
+  console.log(`🔊 TTS 预热完成: ${warmed}/${STATIC_PHRASES.length} 条已缓存`);
+}
+
 // ── Start ────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`🌸 美乐蒂识字大冒险 服务器已启动: http://localhost:${PORT}`);
   if (DASHSCOPE_API_KEY) {
     console.log(`🎙️  TTS 已启用 (voice: ${TTS_VOICE})`);
+    prewarmTts();
   } else {
     console.log('⚠️  TTS 未启用：请设置环境变量 DASHSCOPE_API_KEY');
   }
