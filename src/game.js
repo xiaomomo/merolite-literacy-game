@@ -409,6 +409,11 @@ class AdventureGame {
             this.showGameTypeSelect();
         });
 
+        // 学习阶段完成
+        document.getElementById('btn-learn-done').addEventListener('click', () => {
+            this.beginGamePlay();
+        });
+
         // 游戏类型选择
         document.querySelectorAll('.game-type-card').forEach(card => {
             card.addEventListener('click', (e) => {
@@ -602,7 +607,7 @@ class AdventureGame {
         });
         document.querySelector(`[data-type="${type}"]`).classList.add('selected');
 
-        const names = { 'hide-seek': '捉迷藏', 'bubble': '泡泡消除', 'puzzle': '拼图识字' };
+        const names = { 'hide-seek': '捉迷藏', 'bubble': '泡泡消除', 'puzzle': '拼图识字', 'listen': '听音选字' };
         this.speak(`好的，玩${names[type]}！`);
 
         setTimeout(() => {
@@ -617,20 +622,32 @@ class AdventureGame {
         if (!this.currentIslandData) return;
 
         const learnedWords = this.state.foundWords;
-        let availableWords = this.currentIslandData.words.filter(
+
+        // ── 间隔复习：混入需要复习的字（20%） ──
+        let newWords = this.currentIslandData.words.filter(
             w => !learnedWords.includes(w.char)
         );
+        let reviewWords = [];
+        if (!this.state.reviewLog) this.state.reviewLog = {};
+        const now = Date.now();
+        const DAY = 86400000;
+        const reviewCandidates = this.currentIslandData.words.filter(w => {
+            if (!learnedWords.includes(w.char)) return false;
+            const last = this.state.reviewLog[w.char] || 0;
+            return (now - last) > DAY;
+        });
+        reviewCandidates.sort(() => Math.random() - 0.5);
+        reviewWords = reviewCandidates.slice(0, 1);
 
-        if (availableWords.length === 0) {
+        if (newWords.length === 0 && reviewWords.length === 0) {
             const allGradeWords = wordData.getAllWordsForGrade(this.currentGrade.id);
-            availableWords = allGradeWords.filter(w => !learnedWords.includes(w.char));
+            newWords = allGradeWords.filter(w => !learnedWords.includes(w.char));
         }
 
-        // 随机打乱并选择最多 3 个字
-        availableWords.sort(() => Math.random() - 0.5);
-        const wordsToPlay = Math.min(3, availableWords.length);
-
-        this.currentWords = availableWords.slice(0, wordsToPlay);
+        newWords.sort(() => Math.random() - 0.5);
+        const newSlice = newWords.slice(0, Math.max(2, 3 - reviewWords.length));
+        this.currentWords = [...newSlice, ...reviewWords];
+        this.currentWords.sort(() => Math.random() - 0.5);
 
         if (this.currentWords.length === 0) {
             this.speakLater('哇！所有的字宝宝都被你找到啦！美乐蒂说，你真是太厉害了！', 200);
@@ -648,20 +665,58 @@ class AdventureGame {
 
         this.totalWordsToFind = this.currentWords.length;
 
-        // 隐藏故事和游戏选择，显示游戏区域
+        // ── 先学后玩：展示本轮要学的新字 ──
+        const hasNewWords = newSlice.length > 0;
+        if (hasNewWords) {
+            this.showLearnPhase(newSlice);
+        } else {
+            this.beginGamePlay();
+        }
+    }
+
+    // 先学后玩：学习阶段
+    showLearnPhase(words) {
+        document.getElementById('level-story').style.display = 'none';
+        document.getElementById('game-type-select').style.display = 'none';
+        document.getElementById('game-area').style.display = 'none';
+        const learnEl = document.getElementById('learn-phase');
+        learnEl.style.display = 'block';
+
+        const cardsEl = document.getElementById('learn-cards');
+        cardsEl.innerHTML = '';
+
+        words.forEach(word => {
+            const card = document.createElement('div');
+            card.className = 'learn-card';
+            card.innerHTML = `
+                <span class="lc-char">${word.char}</span>
+                <span class="lc-pinyin">${word.pinyin}</span>
+                <span class="lc-word">${word.word || ''}</span>
+            `;
+            card.addEventListener('click', () => {
+                card.classList.add('tapped');
+                this.speak(`${word.char}，${word.pinyin}，${word.word || ''}`);
+            });
+            cardsEl.appendChild(card);
+        });
+
+        this.speakLater(`先来认识这${words.length}个字宝宝吧！点一下听听它们怎么读。`, 300);
+    }
+
+    // 从学习阶段进入游戏
+    beginGamePlay() {
+        document.getElementById('learn-phase').style.display = 'none';
         document.getElementById('level-story').style.display = 'none';
         document.getElementById('game-type-select').style.display = 'none';
 
         const gameArea = document.getElementById('game-area');
         gameArea.style.display = 'block';
 
-        // 重置游戏内容和进度
         document.getElementById('game-content').innerHTML = '';
         document.getElementById('game-instruction').textContent = '准备开始...';
 
         this.updateGameProgress();
 
-        // 延迟一下开始，确保显示正确
         setTimeout(() => {
             this.nextWord();
         }, 100);
@@ -675,19 +730,28 @@ class AdventureGame {
 
         this.targetWord = this.currentWords[this.wordsFoundInSession];
 
-        document.getElementById('game-instruction').textContent =
-            `美乐蒂说："${this.targetWord.char}"字宝宝在哪里呢？`;
+        if (this.currentGameType === 'listen') {
+            document.getElementById('game-instruction').textContent =
+                '听声音，找到对应的字宝宝！';
+        } else {
+            document.getElementById('game-instruction').textContent =
+                `美乐蒂说："${this.targetWord.char}"字宝宝在哪里呢？`;
+        }
 
         const content = document.getElementById('game-content');
         content.innerHTML = '';
         content.style.display = 'block';
 
-        this.speak(`请找到${this.targetWord.char}字`);
+        if (this.currentGameType !== 'listen') {
+            this.speak(`请找到${this.targetWord.char}字`);
+        }
 
         if (this.currentGameType === 'bubble') {
             this.startBubbleGame();
         } else if (this.currentGameType === 'puzzle') {
             this.startPuzzleGame();
+        } else if (this.currentGameType === 'listen') {
+            this.startListenGame();
         } else {
             this.startHideSeekGame();
         }
@@ -915,6 +979,59 @@ class AdventureGame {
         });
     }
 
+    // 游戏 4：听音选字
+    startListenGame() {
+        const container = document.getElementById('game-content');
+        container.innerHTML = '';
+        container.style.display = 'block';
+        container.style.textAlign = 'center';
+
+        document.getElementById('game-instruction').textContent =
+            '听声音，找到对应的字宝宝！';
+
+        const playBtn = document.createElement('button');
+        playBtn.className = 'listen-play-btn';
+        playBtn.textContent = '🔊';
+        playBtn.addEventListener('click', () => {
+            this.speak(this.targetWord.char);
+        });
+        container.appendChild(playBtn);
+
+        const allWords = wordData.getAllWordsForGrade(this.currentGrade ? this.currentGrade.id : '1A');
+        const options = [this.targetWord];
+        while (options.length < 4) {
+            const rw = allWords[Math.floor(Math.random() * allWords.length)];
+            if (!options.find(w => w.char === rw.char)) options.push(rw);
+        }
+        options.sort(() => Math.random() - 0.5);
+
+        const grid = document.createElement('div');
+        grid.style.cssText = 'display:flex;flex-wrap:wrap;justify-content:center;gap:15px;margin-top:15px;';
+
+        options.forEach((word, i) => {
+            const card = document.createElement('div');
+            card.className = `game-card-large card-style-${i % 4}`;
+            card.innerHTML = `<span class="char">${word.char}</span>`;
+            card.addEventListener('click', () => {
+                if (word.char === this.targetWord.char) {
+                    this.playSound('correct');
+                    this.showFoundScreen(word);
+                } else {
+                    this.playSound('wrong');
+                    card.style.opacity = '0.4';
+                    card.style.filter = 'grayscale(0.6)';
+                    this.speak('不对哦，再听一次');
+                    setTimeout(() => this.speak(this.targetWord.char), 1500);
+                }
+            });
+            grid.appendChild(card);
+        });
+
+        container.appendChild(grid);
+
+        setTimeout(() => this.speak(this.targetWord.char), 500);
+    }
+
     // 显示找到字宝宝界面
     showFoundScreen(word) {
         const foundScreen = document.getElementById('found-screen');
@@ -922,11 +1039,18 @@ class AdventureGame {
 
         document.getElementById('found-char').textContent = word.char;
         const wordGroup = word.word || word.group || '';
-        const msg = `"${word.char}"字宝宝说："谢谢你找到我！我的组词是${wordGroup}～"`;
-        document.getElementById('found-message').textContent = msg;
+        const msg = `${word.pinyin}　　组词：${wordGroup}`;
+        document.getElementById('found-message').innerHTML =
+            `<b style="font-size:1.5rem;color:#FF69B4">${word.pinyin}</b><br>组词：${wordGroup}`;
 
         this.foundWordData = word;
-        this.speakLater(`找到啦！${word.char}！${msg}。点击送字宝宝回家吧！`, 300);
+
+        // 间隔复习：记录复习时间
+        if (!this.state.reviewLog) this.state.reviewLog = {};
+        this.state.reviewLog[word.char] = Date.now();
+        this.saveState();
+
+        this.speakLater(`找到啦！${word.char}，${word.pinyin}，${wordGroup}。点击送字宝宝回家吧！`, 300);
     }
 
     // 送字宝宝回家

@@ -999,10 +999,10 @@ body {
     .story-text { font-size: 1.1rem; padding: 15px; margin: 15px 0 20px; }
     .btn-start-level { font-size: 1.3rem; padding: 14px 30px; }
 
-    /* 游戏选择 — 横向三列但尺寸更紧凑 */
+    /* 游戏选择 — 2x2 网格 */
     .game-type-select { padding: 15px 10px; }
     .select-title { font-size: 1.2rem; margin-bottom: 15px; }
-    .game-type-cards { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .game-type-cards { grid-template-columns: repeat(2, 1fr); gap: 10px; }
     .game-type-card { padding: 15px 8px; border-radius: 15px; border-width: 2px; }
     .type-icon { font-size: 2.5rem; margin-bottom: 6px; }
     .game-type-card h4 { font-size: 0.95rem; }
@@ -1230,6 +1230,62 @@ body {
     100% { top: 50px; left: calc(100% + 30px); }
 }
 
+/* ==================== 先学后玩 ==================== */
+.learn-phase {
+    background: var(--white);
+    border-radius: 25px;
+    padding: 30px;
+    text-align: center;
+    box-shadow: 0 4px 20px var(--shadow);
+}
+
+.learn-title {
+    font-size: 1.5rem;
+    color: var(--pink-dark);
+    margin-bottom: 20px;
+}
+
+.learn-cards {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-bottom: 15px;
+}
+
+.learn-card {
+    background: linear-gradient(135deg, var(--pink-light), var(--white));
+    border: 3px solid var(--pink-medium);
+    border-radius: 20px;
+    padding: 15px 12px;
+    width: 110px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.learn-card:active { transform: scale(0.95); }
+.learn-card.tapped { border-color: var(--pink-dark); background: linear-gradient(135deg, var(--pink-medium), var(--pink-light)); }
+
+.learn-card .lc-char { font-size: 3.5rem; color: var(--pink-dark); display: block; }
+.learn-card .lc-pinyin { font-size: 1rem; color: var(--text-dark); margin-top: 4px; }
+.learn-card .lc-word { font-size: 0.9rem; color: var(--text-light); margin-top: 2px; }
+
+.learn-hint {
+    font-size: 1rem;
+    color: var(--text-light);
+    margin-bottom: 20px;
+    animation: pulse 2s infinite;
+}
+
+@media (max-width: 480px) {
+    .learn-phase { padding: 18px 12px; }
+    .learn-title { font-size: 1.2rem; }
+    .learn-card { width: 90px; padding: 10px 8px; }
+    .learn-card .lc-char { font-size: 2.8rem; }
+    .learn-card .lc-pinyin { font-size: 0.85rem; }
+}
+
 /* ==================== 游戏选择卡片 ==================== */
 .game-type-select {
     padding: 30px;
@@ -1244,8 +1300,8 @@ body {
 
 .game-type-cards {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
 }
 
 .game-type-card {
@@ -1316,6 +1372,27 @@ body {
     color: var(--pink-dark);
     font-weight: bold;
 }
+
+/* ==================== 听音选字 ==================== */
+.listen-play-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--pink-dark), var(--pink-medium));
+    border: none;
+    cursor: pointer;
+    font-size: 2.5rem;
+    color: var(--white);
+    box-shadow: 0 6px 20px var(--shadow);
+    margin: 10px auto 20px;
+    animation: pulse 2s infinite;
+    transition: all 0.3s ease;
+}
+
+.listen-play-btn:active { transform: scale(0.9); }
 
 /* ==================== 泡泡游戏 ==================== */
 .bubble-item {
