@@ -1107,6 +1107,10 @@ class AdventureGame {
         this.state.reviewLog[word.char] = Date.now();
         this.saveState();
 
+        // 后台生成芽芽专属配图（不阻塞UI，缓存后城堡可用）
+        fetch(`/api/personal-illustration/${encodeURIComponent(word.char)}?word=${encodeURIComponent(word.word || word.char)}`)
+            .catch(() => {});
+
         this.speakLater(`找到啦！${word.char}，${word.pinyin}，${wordGroup}。点击送字宝宝回家吧！`, 300);
     }
 
@@ -1226,7 +1230,7 @@ class AdventureGame {
         if (count === 0) {
             this.speakLater('字宝宝城堡！城堡里还没有字宝宝呢，快去冒险邀请字宝宝们来住吧！', 300);
         } else {
-            this.speakLater(`字宝宝城堡！已经住了${count}个字宝宝。点一个字宝宝，听听它怎么读吧！`, 300);
+            this.speakLater(`字宝宝城堡！已经住了${count}个字宝宝。点一个字宝宝看芽芽的专属图片吧！`, 300);
         }
 
         // 显示装饰
@@ -1239,7 +1243,7 @@ class AdventureGame {
             decoContainer.appendChild(item);
         });
 
-        // 显示字宝宝
+        // 显示字宝宝图鉴
         const grid = document.getElementById('castle-words-grid');
         grid.innerHTML = '';
 
@@ -1254,21 +1258,95 @@ class AdventureGame {
             return;
         }
 
-        const allWords = wordData.getAllWordsForGrade(this.currentGrade ? this.currentGrade.id : "1A");
+        const allWords = wordData.getAllWordsForGrade(this.currentGrade ? this.currentGrade.id : '1A');
         const foundWordObjects = allWords.filter(w => this.state.foundWords.includes(w.char));
 
         foundWordObjects.forEach(word => {
             const card = document.createElement('div');
-            card.className = 'castle-word-card';
+            card.className = 'castle-img-card';
             card.innerHTML = `
-                <span class="char">${word.char}</span>
-                <span class="pinyin">${word.pinyin}</span>
+                <div class="cic-img-wrap"><span class="cic-loading">🎨</span></div>
+                <div class="cic-label">
+                    <span class="cic-char">${word.char}</span>
+                    <span class="cic-pinyin">${word.pinyin}</span>
+                </div>
             `;
+
+            // 加载专属配图
+            const wrap = card.querySelector('.cic-img-wrap');
+            fetch(`/api/personal-illustration/${encodeURIComponent(word.char)}?word=${encodeURIComponent(word.word || word.char)}`)
+                .then(r => r.ok ? r.blob() : Promise.reject())
+                .then(blob => {
+                    wrap.innerHTML = `<img src="${URL.createObjectURL(blob)}" alt="${word.char}" />`;
+                })
+                .catch(() => {
+                    wrap.innerHTML = `<span class="cic-fallback">${word.char}</span>`;
+                });
+
             card.addEventListener('click', () => {
-                this.showWordDetail(word);
+                this.showCastleDetail(word);
             });
             grid.appendChild(card);
         });
+    }
+
+    // 城堡大图详情
+    showCastleDetail(word) {
+        this.speak(word.char);
+        const w = word.word || word.group || '';
+
+        const modal = document.getElementById('game-modal');
+        const iconEl = document.getElementById('modal-icon');
+        const messageEl = document.getElementById('modal-message');
+        const buttonsEl = document.getElementById('modal-buttons');
+
+        iconEl.textContent = '';
+        iconEl.style.fontSize = '0';
+
+        // 先显示加载状态
+        messageEl.innerHTML = `
+            <div class="castle-detail">
+                <div class="cd-img-container"><span class="lcf-img-loading">🎨</span></div>
+                <div class="cd-info">
+                    <span class="cd-char">${word.char}</span>
+                    <span class="cd-pinyin">${word.pinyin}</span>
+                    <span class="cd-word">组词：${w}</span>
+                </div>
+            </div>
+        `;
+
+        buttonsEl.innerHTML = '';
+        const btn = document.createElement('button');
+        btn.className = 'game-modal-btn primary';
+        btn.textContent = '🔊 听一听';
+        btn.addEventListener('click', () => {
+            this.speak(`${word.char}，${word.pinyin}，${w}`);
+        });
+        buttonsEl.appendChild(btn);
+
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'game-modal-btn secondary';
+        closeBtn.textContent = '关闭';
+        closeBtn.addEventListener('click', () => {
+            modal.style.display = 'none';
+            iconEl.style.fontSize = '';
+        });
+        buttonsEl.appendChild(closeBtn);
+
+        modal.style.display = 'flex';
+
+        // 加载大图
+        const imgContainer = modal.querySelector('.cd-img-container');
+        fetch(`/api/personal-illustration/${encodeURIComponent(word.char)}?word=${encodeURIComponent(w)}`)
+            .then(r => r.ok ? r.blob() : Promise.reject())
+            .then(blob => {
+                imgContainer.innerHTML = `<img src="${URL.createObjectURL(blob)}" alt="${word.char}" />`;
+            })
+            .catch(() => {
+                imgContainer.innerHTML = `<span style="font-size:5rem;color:var(--pink-dark)">${word.char}</span>`;
+            });
+
+        this.speakLater(`${word.char}，${word.pinyin}，${w}`, 300);
     }
 
     // 显示背包

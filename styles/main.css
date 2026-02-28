@@ -658,10 +658,112 @@ body {
 
 .words-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
     gap: 12px;
 }
 
+/* 城堡图鉴卡片 */
+.castle-img-card {
+    border-radius: 15px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 3px 12px var(--shadow);
+    background: var(--pink-light);
+}
+
+.castle-img-card:active { transform: scale(0.95); }
+
+.cic-img-wrap {
+    width: 100%;
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--pink-light);
+    overflow: hidden;
+}
+
+.cic-img-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.cic-loading { font-size: 1.8rem; animation: pulse 1.5s infinite; }
+.cic-fallback { font-size: 2.5rem; color: var(--pink-dark); }
+
+.cic-label {
+    padding: 6px 8px;
+    text-align: center;
+    background: var(--white);
+}
+
+.cic-char {
+    font-size: 1.3rem;
+    color: var(--pink-dark);
+    font-weight: bold;
+    margin-right: 4px;
+}
+
+.cic-pinyin {
+    font-size: 0.8rem;
+    color: var(--text-light);
+}
+
+/* 城堡大图详情 */
+.castle-detail {
+    text-align: center;
+}
+
+.cd-img-container {
+    width: 280px;
+    height: 280px;
+    margin: 0 auto 15px;
+    border-radius: 20px;
+    overflow: hidden;
+    background: var(--pink-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cd-img-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 20px;
+}
+
+.cd-info { margin-bottom: 5px; }
+
+.cd-char {
+    font-size: 2.5rem;
+    color: var(--pink-dark);
+    font-weight: bold;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.cd-pinyin {
+    font-size: 1.3rem;
+    color: var(--text-dark);
+    margin-right: 10px;
+}
+
+.cd-word {
+    font-size: 1.1rem;
+    color: var(--text-light);
+}
+
+@media (max-width: 480px) {
+    .words-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .cic-char { font-size: 1.1rem; }
+    .cd-img-container { width: 220px; height: 220px; }
+    .cd-char { font-size: 2rem; }
+}
+
+/* 旧版卡片兼容 */
 .castle-word-card {
     aspect-ratio: 1;
     background: linear-gradient(135deg, var(--pink-light), var(--pink-soft));
@@ -671,23 +773,9 @@ body {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 8px var(--shadow);
 }
-
-.castle-word-card:active {
-    transform: scale(0.9);
-}
-
-.castle-word-card .char {
-    font-size: 2.5rem;
-    color: var(--pink-dark);
-}
-
-.castle-word-card .pinyin {
-    font-size: 0.8rem;
-    color: var(--text-dark);
-}
+.castle-word-card .char { font-size: 2.5rem; color: var(--pink-dark); }
+.castle-word-card .pinyin { font-size: 0.8rem; color: var(--text-dark); }
 
 /* ==================== 背包界面 ==================== */
 .backpack-header {
