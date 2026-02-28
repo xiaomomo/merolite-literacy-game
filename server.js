@@ -110,9 +110,10 @@ app.post('/api/tts', async (req, res) => {
   }
 
   const hash = crypto.createHash('md5').update(text).digest('hex');
-  const cacheFile = path.join(TTS_CACHE_DIR, `${hash}.mp3`);
+  const cacheFile = path.join(TTS_CACHE_DIR, `${hash}.wav`);
 
   if (fs.existsSync(cacheFile)) {
+    res.set('Content-Type', 'audio/wav');
     return res.sendFile(cacheFile);
   }
 
@@ -122,106 +123,37 @@ app.post('/api/tts', async (req, res) => {
       headers: {
         'Authorization': `Bearer ${DASHSCOPE_API_KEY}`,
         'Content-Type': 'application/json',
-        'X-DashScope-Async': 'enable',
       },
       body: JSON.stringify({
         model: 'qwen3-tts-flash',
-        input: {
-          messages: [
-            {
-              role: 'user',
-              content: [{ text }],
-            },
-          ],
-        },
-        parameters: {
-          voice: TTS_VOICE,
-          response_format: 'mp3',
-        },
+        input: { text },
+        parameters: { voice: TTS_VOICE },
       }),
     });
 
     const data = await apiRes.json();
 
-    if (!apiRes.ok) {
+    if (!apiRes.ok || data.code) {
       console.error('TTS API error:', apiRes.status, JSON.stringify(data));
-      return res.status(502).json({ error: 'TTS API 调用失败', detail: data });
+      return res.status(502).json({ error: 'TTS API 调用失败', detail: data.message });
     }
 
-    // 异步任务：需要轮询获取结果
-    const taskId = data.output && data.output.task_id;
-    if (taskId) {
-      const audioBuffer = await pollTtsResult(taskId);
-      if (audioBuffer) {
-        fs.writeFileSync(cacheFile, audioBuffer);
-        res.set('Content-Type', 'audio/mpeg');
-        return res.send(audioBuffer);
-      }
-      return res.status(502).json({ error: '获取 TTS 结果超时' });
+    const audioUrl = data.output?.audio?.url;
+    if (!audioUrl) {
+      console.error('TTS: 响应中没有音频 URL', JSON.stringify(data).slice(0, 500));
+      return res.status(502).json({ error: '无法解析 TTS 响应' });
     }
 
-    // 同步返回：直接从 output 提取音频
-    const audioUrl = extractAudioUrl(data);
-    if (audioUrl) {
-      const audioRes = await fetch(audioUrl);
-      const audioBuffer = Buffer.from(await audioRes.arrayBuffer());
-      fs.writeFileSync(cacheFile, audioBuffer);
-      res.set('Content-Type', 'audio/mpeg');
-      return res.send(audioBuffer);
-    }
-
-    console.error('TTS: 无法从响应中提取音频', JSON.stringify(data).slice(0, 500));
-    return res.status(502).json({ error: '无法解析 TTS 响应' });
+    const audioRes = await fetch(audioUrl);
+    const audioBuffer = Buffer.from(await audioRes.arrayBuffer());
+    fs.writeFileSync(cacheFile, audioBuffer);
+    res.set('Content-Type', 'audio/wav');
+    res.send(audioBuffer);
   } catch (err) {
     console.error('TTS error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
-
-function extractAudioUrl(data) {
-  try {
-    const choices = data.output?.choices;
-    if (choices?.[0]?.message?.content) {
-      for (const item of choices[0].message.content) {
-        if (item.audio) return item.audio;
-      }
-    }
-    if (data.output?.audio) return data.output.audio;
-    if (data.output?.audio_url) return data.output.audio_url;
-  } catch {}
-  return null;
-}
-
-async function pollTtsResult(taskId, maxWait = 30000) {
-  const pollUrl = `https://dashscope.aliyuncs.com/api/v1/tasks/${taskId}`;
-  const start = Date.now();
-  while (Date.now() - start < maxWait) {
-    await new Promise(r => setTimeout(r, 500));
-    try {
-      const res = await fetch(pollUrl, {
-        headers: { 'Authorization': `Bearer ${DASHSCOPE_API_KEY}` },
-      });
-      const data = await res.json();
-      const status = data.output?.task_status;
-
-      if (status === 'SUCCEEDED') {
-        const audioUrl = extractAudioUrl(data) || data.output?.results?.[0]?.url;
-        if (audioUrl) {
-          const audioRes = await fetch(audioUrl);
-          return Buffer.from(await audioRes.arrayBuffer());
-        }
-        return null;
-      }
-      if (status === 'FAILED') {
-        console.error('TTS task failed:', JSON.stringify(data).slice(0, 500));
-        return null;
-      }
-    } catch (err) {
-      console.error('TTS poll error:', err.message);
-    }
-  }
-  return null;
-}
 
 // ── Start ────────────────────────────────────────────────
 app.listen(PORT, () => {
