@@ -477,6 +477,7 @@ class AdventureGame {
         this.stopSpeaking();
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById(screenId).classList.add('active');
+        window.scrollTo(0, 0);
 
         // 调整 Canvas 大小
         setTimeout(() => {
@@ -1738,9 +1739,27 @@ class AdventureGame {
         this._mathIndex = 0;
         this._mathCorrect = 0;
 
-        document.getElementById('math-game-title').textContent = unit.name;
+        // 随机选一个游戏主题
+        const themes = [
+            { name: '公主城堡', icon: '👑', bg: '#FFF0F5',
+              items: ['🏰','🗼','👗','💎','👠','🪞','🦄','💐','🎀','👑'],
+              verb: '收集到公主宝物', scene: '帮公主建造城堡！' },
+            { name: '花园采集', icon: '🌸', bg: '#F0FFF0',
+              items: ['🌸','🌷','🌹','🌻','🌺','🌼','🍀','🌿','🦋','🐝'],
+              verb: '采到一朵花', scene: '帮美乐蒂采花装扮花园！' },
+            { name: '甜点厨房', icon: '🧁', bg: '#FFF8F0',
+              items: ['🧁','🍰','🍪','🍩','🎂','🍬','🍭','🍫','🍮','🧋'],
+              verb: '做好一个甜点', scene: '芽芽的甜点厨房开张啦！' },
+            { name: '星星拼图', icon: '🧩', bg: '#F0F0FF',
+              items: ['⭐','⭐','⭐','⭐','⭐','⭐','⭐','⭐','⭐','⭐'],
+              verb: '点亮一颗星星', scene: '答对题目点亮星空！' },
+        ];
+        this._mathTheme = themes[Math.floor(Math.random() * themes.length)];
+
+        document.getElementById('math-game-title').textContent =
+            `${this._mathTheme.icon} ${unit.name} · ${this._mathTheme.name}`;
         this.showScreen('math-game-screen');
-        this.speakLater(`${unit.name}挑战开始！一共10道题，加油！`, 300);
+        this.speakLater(`${this._mathTheme.scene} 一共10道题，答对就能${this._mathTheme.verb}！`, 300);
         this.showMathQuestion();
     }
 
@@ -1748,37 +1767,44 @@ class AdventureGame {
         const q = this._mathQuestions[this._mathIndex];
         const total = this._mathQuestions.length;
         const idx = this._mathIndex;
+        const theme = this._mathTheme;
 
         // 进度条
         document.getElementById('math-progress-fill').style.width =
             `${(idx / total) * 100}%`;
 
-        // 星星
+        // 采集物展示（答对的显示，未答的灰色）
         const stars = document.getElementById('math-stars');
-        stars.textContent = '⭐'.repeat(this._mathCorrect) + '☆'.repeat(total - this._mathCorrect);
+        let itemsHtml = '';
+        for (let i = 0; i < total; i++) {
+            if (i < this._mathCorrect) {
+                itemsHtml += `<span class="math-item-got">${theme.items[i]}</span>`;
+            } else {
+                itemsHtml += `<span class="math-item-empty">○</span>`;
+            }
+        }
+        stars.innerHTML = itemsHtml;
 
-        // 题目
+        // 题目卡片带主题背景
+        const card = document.getElementById('math-question-card');
+        card.style.background = theme.bg;
+
         document.getElementById('math-question-text').textContent = q.question;
 
-        // 选项
+        // 选项：用主题色按钮
         const choicesEl = document.getElementById('math-choices');
         choicesEl.innerHTML = '';
 
         const colors = ['#FFD1DC', '#D4F1F9', '#FFF3CD', '#E8DAEF'];
-
         q.choices.forEach((choice, i) => {
             const btn = document.createElement('button');
             btn.className = 'math-choice-btn';
             btn.style.background = `linear-gradient(135deg, ${colors[i]}, white)`;
-
-            const displayVal = q.display ? q.display(choice) : (q.isText ? choice : choice);
-            btn.textContent = displayVal;
-
+            btn.textContent = q.display ? q.display(choice) : (q.isText ? choice : choice);
             btn.addEventListener('click', () => this.checkMathAnswer(choice, btn));
             choicesEl.appendChild(btn);
         });
 
-        // 读题
         this.speakLater(q.question.replace(/[×÷−]/g, m =>
             ({ '×': '乘', '÷': '除以', '−': '减' }[m])), 500);
     }
@@ -1786,32 +1812,38 @@ class AdventureGame {
     checkMathAnswer(selected, btn) {
         const q = this._mathQuestions[this._mathIndex];
         const isCorrect = selected === q.answer;
+        const theme = this._mathTheme;
 
-        // 禁用所有按钮
         document.querySelectorAll('.math-choice-btn').forEach(b => {
             b.style.pointerEvents = 'none';
-            if ((q.display ? q.display(q.answer) : (q.isText ? q.answer : q.answer)) == b.textContent) {
-                b.classList.add('correct');
-            }
+            const correctDisplay = q.display ? q.display(q.answer) : (q.isText ? q.answer : q.answer);
+            if (b.textContent == correctDisplay) b.classList.add('correct');
         });
 
         if (isCorrect) {
             this._mathCorrect++;
             btn.classList.add('correct');
             this.playSound('correct');
-            this.speak('答对了！');
+            this.speak(`答对了！${theme.verb}！`);
         } else {
             btn.classList.add('wrong');
             this.playSound('wrong');
             this.speak('没关系，看看正确答案');
         }
 
-        // 更新星星
+        // 更新采集物
         const total = this._mathQuestions.length;
-        document.getElementById('math-stars').textContent =
-            '⭐'.repeat(this._mathCorrect) + '☆'.repeat(total - this._mathCorrect);
+        const stars = document.getElementById('math-stars');
+        let itemsHtml = '';
+        for (let i = 0; i < total; i++) {
+            if (i < this._mathCorrect) {
+                itemsHtml += `<span class="math-item-got">${theme.items[i]}</span>`;
+            } else {
+                itemsHtml += `<span class="math-item-empty">○</span>`;
+            }
+        }
+        stars.innerHTML = itemsHtml;
 
-        // 下一题或结束
         setTimeout(() => {
             this._mathIndex++;
             if (this._mathIndex < this._mathQuestions.length) {
@@ -1845,9 +1877,13 @@ class AdventureGame {
             this.saveState();
         }
 
+        const theme = this._mathTheme;
+        const collected = theme.items.slice(0, correct).join('');
+
         document.getElementById('math-result-medal').textContent = medal;
         document.getElementById('math-result-title').textContent = title;
-        document.getElementById('math-result-score').textContent = `答对 ${correct}/${total} 题`;
+        document.getElementById('math-result-score').innerHTML =
+            `答对 ${correct}/${total} 题<br><span style="font-size:1.5rem;letter-spacing:3px">${collected}</span>`;
         document.getElementById('math-result-overlay').style.display = 'flex';
         document.getElementById('math-progress-fill').style.width = '100%';
 
