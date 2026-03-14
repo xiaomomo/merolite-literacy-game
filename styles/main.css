@@ -27,6 +27,7 @@ body {
     font-family: 'ZCOOL KuaiLe', cursive, sans-serif;
     background: linear-gradient(135deg, #FFE4E1 0%, #FFC0CB 50%, #DDA0DD 100%);
     min-height: 100vh;
+    min-height: 100dvh;
     color: var(--text-dark);
     overflow-x: hidden;
     user-select: none;
@@ -37,7 +38,6 @@ body {
     max-width: 1024px;
     margin: 0 auto;
     padding: 15px;
-    min-height: 100vh;
 }
 
 /* 屏幕切换 */
