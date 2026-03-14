@@ -252,6 +252,12 @@ class AdventureGame {
             const data = await this.apiRequest('GET', `/players/${this.playerId}/state`);
             if (data && data.state && Object.keys(data.state).length > 0) {
                 this.state = { ...this.defaultState, ...data.state };
+                // 修复 NaN
+                if (this.state.islandsProgress) {
+                    for (const k in this.state.islandsProgress) {
+                        if (!Number.isFinite(this.state.islandsProgress[k])) this.state.islandsProgress[k] = 0;
+                    }
+                }
                 localStorage.setItem('merolite-adventure', JSON.stringify(this.state));
                 return;
             }
@@ -261,6 +267,27 @@ class AdventureGame {
         if (saved) {
             try { this.state = { ...this.defaultState, ...JSON.parse(saved) }; } catch {}
         }
+
+        this._repairProgress();
+    }
+
+    _repairProgress() {
+        if (!this.state.islandsProgress) this.state.islandsProgress = {};
+        const found = this.state.foundWords || [];
+        if (found.length === 0) return;
+
+        let dirty = false;
+        for (const grade of wordData.grades) {
+            for (const unit of grade.units) {
+                const actual = unit.words.filter(w => found.includes(w.char)).length;
+                const stored = this.state.islandsProgress[unit.id];
+                if (!Number.isFinite(stored) || stored !== actual) {
+                    this.state.islandsProgress[unit.id] = actual;
+                    dirty = true;
+                }
+            }
+        }
+        if (dirty) this.saveState();
     }
 
     saveState() {
@@ -1157,7 +1184,8 @@ class AdventureGame {
 
         if (foundNewWord) {
             this.state.foundWords.push(this.foundWordData.char);
-            this.state.islandsProgress[this.currentIsland]++;
+            this.state.islandsProgress[this.currentIsland] =
+                (this.state.islandsProgress[this.currentIsland] || 0) + 1;
         }
 
         this.state.lovePoints += 3;
