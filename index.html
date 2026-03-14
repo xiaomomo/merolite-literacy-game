@@ -33,12 +33,31 @@
             </div>
         </div>
 
-        <!-- 年级选择 -->
+        <!-- 科目选择 -->
+        <div id="subject-screen" class="screen">
+            <div class="grade-content">
+                <h2 class="grade-title">📚 芽芽想学什么？</h2>
+                <div class="grade-grid" style="max-width:400px;">
+                    <div class="grade-card" id="btn-subject-chinese">
+                        <div class="grade-card-icon">📖</div>
+                        <div class="grade-card-name">语文识字</div>
+                        <div class="grade-card-info">认字、拼音、组词</div>
+                    </div>
+                    <div class="grade-card" id="btn-subject-math">
+                        <div class="grade-card-icon">🔢</div>
+                        <div class="grade-card-name">数学</div>
+                        <div class="grade-card-info">加减乘除、找规律</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 语文：年级选择 -->
         <div id="grade-screen" class="screen">
             <div class="grade-content">
-                <h2 class="grade-title">📚 选择课本</h2>
+                <h2 class="grade-title">📖 选择语文课本</h2>
                 <div class="grade-grid" id="grade-grid"></div>
-                <button class="btn-back-map" id="btn-back-intro" style="margin-top:20px;">← 回到地图</button>
+                <button class="btn-back-map" id="btn-back-intro" style="margin-top:20px;">← 返回</button>
             </div>
         </div>
 
@@ -319,8 +338,60 @@
         </div>
     </div>
 
+        <!-- 数学：年级选择 -->
+        <div id="math-grade-screen" class="screen">
+            <div class="grade-content">
+                <h2 class="grade-title">🔢 选择数学课本</h2>
+                <div class="grade-grid" id="math-grade-grid"></div>
+                <button class="btn-back-map" id="btn-math-back-subject" style="margin-top:20px;">← 返回</button>
+            </div>
+        </div>
+
+        <!-- 数学：单元地图 -->
+        <div id="math-map-screen" class="screen">
+            <div class="top-bar">
+                <div class="adventure-day"><span class="icon">🔢</span><span id="math-grade-title">数学</span></div>
+                <div class="love-points"><span class="icon">🏅</span><span id="math-medal-count">0</span></div>
+            </div>
+            <div class="math-units-grid" id="math-units-grid"></div>
+            <div class="bottom-buttons">
+                <button class="btn-castle" id="btn-math-back-grades">📚 换课本</button>
+                <button class="btn-backpack" id="btn-math-back-subject2">📝 语文</button>
+            </div>
+        </div>
+
+        <!-- 数学：答题游戏 -->
+        <div id="math-game-screen" class="screen">
+            <div class="level-header">
+                <button class="btn-back-map" id="btn-math-game-back">← 返回</button>
+                <h2 id="math-game-title">数学挑战</h2>
+            </div>
+            <div class="math-game-area">
+                <div class="math-progress-bar">
+                    <div class="math-progress-fill" id="math-progress-fill"></div>
+                </div>
+                <div class="math-stars" id="math-stars"></div>
+                <div class="math-question-card" id="math-question-card">
+                    <div class="math-question-text" id="math-question-text"></div>
+                </div>
+                <div class="math-choices" id="math-choices"></div>
+            </div>
+        </div>
+
+        <!-- 数学：结果弹窗 -->
+        <div id="math-result-overlay" class="screen-overlay" style="display:none;">
+            <div class="found-content math-result-content">
+                <div class="math-result-medal" id="math-result-medal"></div>
+                <h2 class="math-result-title" id="math-result-title"></h2>
+                <p class="math-result-score" id="math-result-score"></p>
+                <button class="btn-send-home" id="btn-math-retry">🔄 再来一次</button>
+                <button class="btn-back-map" id="btn-math-result-back" style="margin-top:10px;">← 回单元列表</button>
+            </div>
+        </div>
+
     <!-- 引入游戏数据 -->
     <script src="data/wordData.js"></script>
+    <script src="data/mathData.js"></script>
     <!-- 引入游戏主逻辑 -->
     <script src="src/game.js"></script>
 </body>

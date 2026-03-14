@@ -102,6 +102,7 @@ class AdventureGame {
         this.bindEvents();
         this.renderShop();
         this.renderGradeSelect();
+        this.initMath();
 
         if (!this.state.hasStarted) {
             this.showScreen('intro-screen');
@@ -111,8 +112,8 @@ class AdventureGame {
             this.checkDailyLogin();
         } else {
             this.checkDailyLogin();
-            this.showScreen('grade-screen');
-            this.speakLater('选择你要学习的课本吧！', 400);
+            this.showScreen('subject-screen');
+            this.speakLater('芽芽想学什么？语文还是数学？', 400);
         }
 
         this.updateUI();
@@ -379,19 +380,19 @@ class AdventureGame {
             this.saveState();
             this.speak('出发！');
             this.checkDailyLogin();
-            this.showScreen('grade-screen');
-            this.speakLater('选择你要学习的课本吧！', 400);
+            this.showScreen('subject-screen');
+            this.speakLater('芽芽想学什么？语文还是数学？', 400);
         });
 
-        // 回到年级选择
+        // 回到科目选择
         document.getElementById('btn-back-intro').addEventListener('click', () => {
-            this.showScreen('grade-screen');
-            this.speakLater('选择你要学习的课本吧！', 300);
+            this.showScreen('subject-screen');
+            this.speakLater('芽芽想学什么？', 300);
         });
 
         document.getElementById('btn-switch-grade').addEventListener('click', () => {
-            this.showScreen('grade-screen');
-            this.speakLater('选择你要学习的课本吧！', 300);
+            this.showScreen('subject-screen');
+            this.speakLater('芽芽想学什么？', 300);
         });
 
         // 打开礼物
@@ -1634,6 +1635,222 @@ class AdventureGame {
                 setTimeout(() => confetti.remove(), 4000);
             }, i * 30);
         }
+    }
+    // ══════════════════════════════════════════
+    //  数学模块
+    // ══════════════════════════════════════════
+
+    initMath() {
+        if (!this.state.mathMedals) this.state.mathMedals = {};
+
+        // 科目选择
+        document.getElementById('btn-subject-chinese').addEventListener('click', () => {
+            this.showScreen('grade-screen');
+            this.speakLater('选择语文课本吧！', 300);
+        });
+        document.getElementById('btn-subject-math').addEventListener('click', () => {
+            this.showMathGradeSelect();
+        });
+
+        // 数学年级选择
+        const mgGrid = document.getElementById('math-grade-grid');
+        mathData.grades.forEach(grade => {
+            const card = document.createElement('div');
+            card.className = 'grade-card';
+            card.innerHTML = `
+                <div class="grade-card-icon">${grade.icon}</div>
+                <div class="grade-card-name">${grade.name}</div>
+                <div class="grade-card-info">${grade.units.length} 个单元</div>
+            `;
+            card.addEventListener('click', () => this.showMathMap(grade.id));
+            mgGrid.appendChild(card);
+        });
+
+        // 导航按钮
+        document.getElementById('btn-math-back-subject').addEventListener('click', () => {
+            this.showScreen('subject-screen');
+        });
+        document.getElementById('btn-math-back-grades').addEventListener('click', () => {
+            this.showMathGradeSelect();
+        });
+        document.getElementById('btn-math-back-subject2').addEventListener('click', () => {
+            this.showScreen('subject-screen');
+        });
+        document.getElementById('btn-math-game-back').addEventListener('click', () => {
+            this.showMathMap(this._mathGradeId);
+        });
+        document.getElementById('btn-math-retry').addEventListener('click', () => {
+            this.startMathGame(this._mathGradeId, this._mathUnitId);
+        });
+        document.getElementById('btn-math-result-back').addEventListener('click', () => {
+            document.getElementById('math-result-overlay').style.display = 'none';
+            this.showMathMap(this._mathGradeId);
+        });
+    }
+
+    showMathGradeSelect() {
+        this.showScreen('math-grade-screen');
+        this.speakLater('选择数学课本吧！', 300);
+    }
+
+    showMathMap(gradeId) {
+        this._mathGradeId = gradeId;
+        const grade = mathData.getGrade(gradeId);
+        if (!grade) return;
+
+        document.getElementById('math-grade-title').textContent = grade.name;
+
+        const totalMedals = Object.keys(this.state.mathMedals).filter(k => k.startsWith(gradeId)).length;
+        document.getElementById('math-medal-count').textContent = totalMedals;
+
+        const grid = document.getElementById('math-units-grid');
+        grid.innerHTML = '';
+
+        grade.units.forEach(unit => {
+            const medal = this.state.mathMedals[unit.id] || '';
+            const card = document.createElement('div');
+            card.className = 'math-unit-card';
+            card.innerHTML = `
+                <div class="mu-icon">${unit.icon}</div>
+                <div class="mu-name">${unit.name}</div>
+                <div class="mu-desc">${unit.desc}</div>
+                ${medal ? `<div class="mu-medal">${medal}</div>` : ''}
+            `;
+            card.addEventListener('click', () => this.startMathGame(gradeId, unit.id));
+            grid.appendChild(card);
+        });
+
+        this.showScreen('math-map-screen');
+        this.speakLater(`${grade.name}，选一个单元开始挑战吧！`, 300);
+    }
+
+    startMathGame(gradeId, unitId) {
+        this._mathGradeId = gradeId;
+        this._mathUnitId = unitId;
+        document.getElementById('math-result-overlay').style.display = 'none';
+
+        const unit = mathData.getUnit(gradeId, unitId);
+        if (!unit) return;
+
+        this._mathQuestions = unit.generate(10);
+        this._mathIndex = 0;
+        this._mathCorrect = 0;
+
+        document.getElementById('math-game-title').textContent = unit.name;
+        this.showScreen('math-game-screen');
+        this.speakLater(`${unit.name}挑战开始！一共10道题，加油！`, 300);
+        this.showMathQuestion();
+    }
+
+    showMathQuestion() {
+        const q = this._mathQuestions[this._mathIndex];
+        const total = this._mathQuestions.length;
+        const idx = this._mathIndex;
+
+        // 进度条
+        document.getElementById('math-progress-fill').style.width =
+            `${(idx / total) * 100}%`;
+
+        // 星星
+        const stars = document.getElementById('math-stars');
+        stars.textContent = '⭐'.repeat(this._mathCorrect) + '☆'.repeat(total - this._mathCorrect);
+
+        // 题目
+        document.getElementById('math-question-text').textContent = q.question;
+
+        // 选项
+        const choicesEl = document.getElementById('math-choices');
+        choicesEl.innerHTML = '';
+
+        const colors = ['#FFD1DC', '#D4F1F9', '#FFF3CD', '#E8DAEF'];
+
+        q.choices.forEach((choice, i) => {
+            const btn = document.createElement('button');
+            btn.className = 'math-choice-btn';
+            btn.style.background = `linear-gradient(135deg, ${colors[i]}, white)`;
+
+            const displayVal = q.display ? q.display(choice) : (q.isText ? choice : choice);
+            btn.textContent = displayVal;
+
+            btn.addEventListener('click', () => this.checkMathAnswer(choice, btn));
+            choicesEl.appendChild(btn);
+        });
+
+        // 读题
+        this.speakLater(q.question.replace(/[×÷−]/g, m =>
+            ({ '×': '乘', '÷': '除以', '−': '减' }[m])), 500);
+    }
+
+    checkMathAnswer(selected, btn) {
+        const q = this._mathQuestions[this._mathIndex];
+        const isCorrect = selected === q.answer;
+
+        // 禁用所有按钮
+        document.querySelectorAll('.math-choice-btn').forEach(b => {
+            b.style.pointerEvents = 'none';
+            if ((q.display ? q.display(q.answer) : (q.isText ? q.answer : q.answer)) == b.textContent) {
+                b.classList.add('correct');
+            }
+        });
+
+        if (isCorrect) {
+            this._mathCorrect++;
+            btn.classList.add('correct');
+            this.playSound('correct');
+            this.speak('答对了！');
+        } else {
+            btn.classList.add('wrong');
+            this.playSound('wrong');
+            this.speak('没关系，看看正确答案');
+        }
+
+        // 更新星星
+        const total = this._mathQuestions.length;
+        document.getElementById('math-stars').textContent =
+            '⭐'.repeat(this._mathCorrect) + '☆'.repeat(total - this._mathCorrect);
+
+        // 下一题或结束
+        setTimeout(() => {
+            this._mathIndex++;
+            if (this._mathIndex < this._mathQuestions.length) {
+                this.showMathQuestion();
+            } else {
+                this.showMathResult();
+            }
+        }, 1200);
+    }
+
+    showMathResult() {
+        const total = this._mathQuestions.length;
+        const correct = this._mathCorrect;
+        let medal = '', title = '';
+
+        if (correct === total) {
+            medal = '🥇'; title = '太厉害了！全对！';
+        } else if (correct >= 8) {
+            medal = '🥈'; title = '非常棒！';
+        } else if (correct >= 5) {
+            medal = '🥉'; title = '不错哦！继续加油！';
+        } else {
+            medal = '💪'; title = '再练练，你可以的！';
+        }
+
+        // 保存最佳勋章
+        const prev = this.state.mathMedals[this._mathUnitId];
+        const medalRank = { '🥇': 3, '🥈': 2, '🥉': 1, '💪': 0 };
+        if (!prev || (medalRank[medal] || 0) > (medalRank[prev] || 0)) {
+            this.state.mathMedals[this._mathUnitId] = medal;
+            this.saveState();
+        }
+
+        document.getElementById('math-result-medal').textContent = medal;
+        document.getElementById('math-result-title').textContent = title;
+        document.getElementById('math-result-score').textContent = `答对 ${correct}/${total} 题`;
+        document.getElementById('math-result-overlay').style.display = 'flex';
+        document.getElementById('math-progress-fill').style.width = '100%';
+
+        this.showConfetti();
+        this.speakLater(`${title} 你答对了${correct}道题！`, 300);
     }
 }
 

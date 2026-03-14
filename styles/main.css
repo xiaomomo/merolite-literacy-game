@@ -1898,6 +1898,125 @@ body {
     }
 }
 
+/* ==================== 数学游戏 ==================== */
+.math-units-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+    padding: 15px;
+}
+
+.math-unit-card {
+    background: var(--white);
+    border-radius: 20px;
+    padding: 18px 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 3px 12px var(--shadow);
+    border: 3px solid var(--pink-medium);
+    position: relative;
+}
+
+.math-unit-card:active { transform: scale(0.95); }
+.math-unit-card .mu-icon { font-size: 2.5rem; margin-bottom: 6px; }
+.math-unit-card .mu-name { font-size: 1rem; color: var(--pink-dark); font-weight: bold; }
+.math-unit-card .mu-desc { font-size: 0.8rem; color: var(--text-light); margin-top: 4px; }
+.math-unit-card .mu-medal {
+    position: absolute; top: -8px; right: -8px;
+    font-size: 1.8rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+}
+
+.math-game-area {
+    padding: 20px 15px;
+    text-align: center;
+}
+
+.math-progress-bar {
+    height: 10px;
+    background: var(--pink-light);
+    border-radius: 10px;
+    margin-bottom: 15px;
+    overflow: hidden;
+}
+
+.math-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--pink-dark), var(--pink-medium));
+    border-radius: 10px;
+    transition: width 0.4s ease;
+    width: 0%;
+}
+
+.math-stars {
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+    letter-spacing: 4px;
+}
+
+.math-question-card {
+    background: var(--white);
+    border-radius: 25px;
+    padding: 30px 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 20px var(--shadow);
+    border: 3px solid var(--pink-medium);
+    min-height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.math-question-text {
+    font-size: 2rem;
+    color: var(--pink-dark);
+    font-weight: bold;
+}
+
+.math-choices {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.math-choice-btn {
+    background: linear-gradient(135deg, var(--pink-light), var(--white));
+    border: 3px solid var(--pink-medium);
+    border-radius: 18px;
+    padding: 18px;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--pink-dark);
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.3s ease;
+}
+
+.math-choice-btn:active { transform: scale(0.95); }
+.math-choice-btn.correct {
+    background: #d4edda !important; border-color: #28a745 !important; color: #155724 !important;
+}
+.math-choice-btn.wrong {
+    background: #f8d7da !important; border-color: #dc3545 !important; color: #721c24 !important;
+}
+
+.math-result-content { max-width: 360px; }
+.math-result-medal { font-size: 6rem; margin-bottom: 10px; }
+.math-result-title { font-size: 1.8rem; color: var(--pink-dark); margin-bottom: 10px; }
+.math-result-score { font-size: 1.2rem; color: var(--text-dark); margin-bottom: 20px; }
+
+@media (max-width: 480px) {
+    .math-units-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 10px; }
+    .math-unit-card { padding: 12px 8px; }
+    .math-unit-card .mu-icon { font-size: 2rem; }
+    .math-unit-card .mu-name { font-size: 0.9rem; }
+    .math-question-text { font-size: 1.6rem; }
+    .math-choice-btn { padding: 14px; font-size: 1.3rem; }
+    .math-result-medal { font-size: 4rem; }
+}
+
 /* ==================== 字宝宝出现动画 ==================== */
 .word-appear {
     animation: wordAppear 0.6s ease-out;
