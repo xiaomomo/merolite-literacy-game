@@ -1641,6 +1641,8 @@ class AdventureGame {
     // ══════════════════════════════════════════
 
     initMath() {
+        if (this._mathInited) return;
+        this._mathInited = true;
         if (!this.state.mathMedals) this.state.mathMedals = {};
 
         // 科目选择
