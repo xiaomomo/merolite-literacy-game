@@ -18,6 +18,10 @@ class AdventureGame {
             ownedDecorations: ['🌸', '⭐', '🎀'],
             lastLoginDate: null,
             currentGradeId: null,
+            lastSubject: null,     // 'chinese' | 'math'
+            lastMathGradeId: null,
+            lastMathUnitId: null,
+            lastChineseUnitId: null,
             islandsProgress: {}
         };
 
@@ -107,16 +111,37 @@ class AdventureGame {
         if (!this.state.hasStarted) {
             this.showScreen('intro-screen');
             this.speakLater('在很远的地方，有一个神奇的字宝宝王国。可是有一天，一场大雾把王国笼罩，所有的字宝宝都迷路了！美乐蒂需要一位小小英雄的帮助，一起寻找字宝宝，送它们回家！你愿意帮助美乐蒂吗？点击开始冒险吧！', 500);
-        } else if (this.state.currentGradeId) {
-            this.selectGrade(this.state.currentGradeId, true);
-            this.checkDailyLogin();
         } else {
             this.checkDailyLogin();
-            this.showScreen('subject-screen');
-            this.speakLater('芽芽想学什么？语文还是数学？', 400);
+            // 如果没有触发每日奖励（同一天再次打开），直接恢复上次位置
+            if (this.state.lastLoginDate === new Date().toDateString()) {
+                this.resumeLastPosition();
+            }
         }
 
         this.updateUI();
+    }
+
+    // ── 恢复上次位置 ──────────────────────────
+
+    resumeLastPosition() {
+        const s = this.state;
+
+        if (s.lastSubject === 'math' && s.lastMathGradeId) {
+            this.showMathMap(s.lastMathGradeId);
+            this.speakLater('继续上次的数学吧！', 300);
+            return;
+        }
+
+        if (s.lastSubject === 'chinese' && s.currentGradeId) {
+            this.selectGrade(s.currentGradeId, true);
+            this.speakLater('继续上次的语文吧！', 300);
+            return;
+        }
+
+        // 没有记录，显示科目选择
+        this.showScreen('subject-screen');
+        this.speakLater('芽芽想学什么？语文还是数学？', 400);
     }
 
     // ── 年级选择 ──────────────────────────────
@@ -143,6 +168,7 @@ class AdventureGame {
         this.currentGrade = wordData.getGrade(gradeId);
         if (!this.currentGrade) return;
         this.state.currentGradeId = gradeId;
+        this.state.lastSubject = 'chinese';
         this.saveState();
 
         this.buildMapForGrade();
@@ -363,10 +389,7 @@ class AdventureGame {
                 message: `美乐蒂送给你：<br><br>💖 ${loveReward} 爱心<br>🎨 ${newSticker} 贴纸`,
                 buttons: [{ text: '谢谢美乐蒂！', value: true, primary: true }]
             }).then(() => {
-                this.showScreen('map-screen');
-                this.updateMap();
-                this.animatePath();
-                this.speakLater('这是冒险地图，选择一个岛屿开始冒险吧！', 300);
+                this.resumeLastPosition();
             });
             this.speakLater(`美乐蒂送给你${loveReward}颗爱心，还有一张贴纸！`, 200);
         }, 1000);
@@ -619,8 +642,9 @@ class AdventureGame {
 
         if (!this.state.visitedIslands.includes(islandId)) {
             this.state.visitedIslands.push(islandId);
-            this.saveState();
         }
+        this.state.lastChineseUnitId = islandId;
+        this.saveState();
 
         this.speakLater(storyText + ' 点击出发找字宝宝！', 300);
 
@@ -1700,6 +1724,9 @@ class AdventureGame {
         this._mathGradeId = gradeId;
         const grade = mathData.getGrade(gradeId);
         if (!grade) return;
+        this.state.lastSubject = 'math';
+        this.state.lastMathGradeId = gradeId;
+        this.saveState();
 
         document.getElementById('math-grade-title').textContent = grade.name;
 
@@ -1769,6 +1796,9 @@ class AdventureGame {
             plot.id = `plot-${i}`;
             plots.appendChild(plot);
         }
+
+        this.state.lastMathUnitId = unitId;
+        this.saveState();
 
         document.getElementById('farm-score').textContent = `0/10`;
         this.showScreen('math-game-screen');
