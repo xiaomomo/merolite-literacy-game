@@ -312,7 +312,41 @@ app.get('/api/personal-illustration/:char', async (req, res) => {
   }
 });
 
-// ── TTS 批量预热 ────────────────────────────────────────
+// ── TTS 批量预热（接受数组，后台生成） ────────────────────
+
+app.post('/api/tts/batch-prewarm', (req, res) => {
+  const texts = req.body.texts;
+  if (!Array.isArray(texts) || !DASHSCOPE_API_KEY) return res.json({ ok: false });
+
+  let queued = 0;
+  texts.forEach(text => {
+    const t = (text || '').trim();
+    if (!t) return;
+    const hash = crypto.createHash('md5').update(t).digest('hex');
+    const file = path.join(TTS_CACHE_DIR, `${hash}.wav`);
+    if (fs.existsSync(file)) return;
+    queued++;
+    // 后台生成，不阻塞响应
+    (async () => {
+      try {
+        const r = await fetch(TTS_API_URL, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${DASHSCOPE_API_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: 'qwen3-tts-flash', input: { text: t }, parameters: { voice: TTS_VOICE } }),
+        });
+        const d = await r.json();
+        if (d.output?.audio?.url) {
+          const ar = await fetch(d.output.audio.url);
+          fs.writeFileSync(file, Buffer.from(await ar.arrayBuffer()));
+        }
+      } catch {}
+    })();
+  });
+
+  res.json({ ok: true, queued });
+});
+
+// ── TTS 静态预热 ────────────────────────────────────────
 
 const STATIC_PHRASES = [
   '选择你要学习的课本吧！',

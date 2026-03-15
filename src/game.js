@@ -182,6 +182,17 @@ class AdventureGame {
             '选择你喜欢的游戏吧！捉迷藏，泡泡消除，拼图识字，还是听音选字？',
             '好的，玩捉迷藏！', '好的，玩泡泡消除！', '好的，玩拼图识字！', '好的，玩听音选字！',
         ]);
+
+        // 提前预热第一个未完成单元的音频（用户最可能点的）
+        if (this.currentGrade) {
+            for (const unit of this.currentGrade.units) {
+                const progress = this.state.islandsProgress[unit.id] || 0;
+                if (progress < unit.words.length) {
+                    this.prefetchUnit(unit.words);
+                    break;
+                }
+            }
+        }
     }
 
     buildMapForGrade() {
@@ -648,9 +659,8 @@ class AdventureGame {
 
         this.speakLater(storyText + ' 点击出发找字宝宝！', 300);
 
-        // 预加载本单元字的发音
-        const unitWords = this.currentIslandData.words.slice(0, 10);
-        this.prefetch(unitWords.map(w => `${w.char}，${w.pinyin}，${w.word || ''}`));
+        // 预热本单元全部字的音频（故事页给了几秒时间生成）
+        this.prefetchUnit(this.currentIslandData.words);
     }
 
     // 显示游戏类型选择
@@ -823,11 +833,13 @@ class AdventureGame {
         // 自动朗读
         this.speakLater(`${word.char}，${word.pinyin}，${word.word || ''}`, 400);
 
-        // 预加载下一个字的发音
+        // 预加载下一个字 + 找到时的庆祝语音
         if (idx + 1 < words.length) {
             const next = words[idx + 1];
             this.prefetch(`${next.char}，${next.pinyin}，${next.word || ''}`);
         }
+        const wg = word.word || '';
+        this.prefetch(`找到啦！${word.char}，${word.pinyin}，${wg}。点击送字宝宝回家吧！`);
     }
 
     // 从学习阶段进入游戏
@@ -1546,19 +1558,40 @@ class AdventureGame {
         return `/api/tts?t=${encodeURIComponent(text)}`;
     }
 
-    // 预加载：让浏览器缓存音频（GET 请求 + Cache-Control: immutable）
+    // 高优先级预加载：用 fetch 立刻请求，触发服务端生成 + 浏览器缓存
     prefetch(texts) {
         const list = Array.isArray(texts) ? texts : [texts];
         list.forEach(raw => {
             const t = this._cleanText(raw);
             if (!t) return;
-            // 用 <link rel=prefetch> 或 fetch 触发浏览器缓存
-            const link = document.createElement('link');
-            link.rel = 'prefetch';
-            link.as = 'audio';
-            link.href = this._ttsUrl(t);
-            document.head.appendChild(link);
+            if (!this._prefetched) this._prefetched = new Set();
+            if (this._prefetched.has(t)) return;
+            this._prefetched.add(t);
+            fetch(this._ttsUrl(t)).catch(() => {});
         });
+    }
+
+    // 预热整个单元的所有字音频
+    prefetchUnit(words) {
+        if (!words || !words.length) return;
+        const texts = [];
+        words.forEach(w => {
+            texts.push(`${w.char}，${w.pinyin}，${w.word || ''}`);
+            texts.push(w.char);
+            texts.push(`请找到${w.char}字`);
+            const wg = w.word || '';
+            texts.push(`找到啦！${w.char}，${w.pinyin}，${wg}。点击送字宝宝回家吧！`);
+        });
+
+        // 先通知服务器批量生成（后台，不阻塞）
+        fetch('/api/tts/batch-prewarm', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ texts }),
+        }).catch(() => {});
+
+        // 同时前端也开始预加载（命中缓存就秒返回）
+        this.prefetch(texts);
     }
 
     // 播放：GET 请求 → 浏览器缓存命中秒播放
