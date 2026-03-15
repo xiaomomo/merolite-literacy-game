@@ -360,22 +360,32 @@
             </div>
         </div>
 
-        <!-- 数学：答题游戏 -->
+        <!-- 数学：答题游戏（农场风格） -->
         <div id="math-game-screen" class="screen">
-            <div class="level-header">
-                <button class="btn-back-map" id="btn-math-game-back">← 返回</button>
-                <h2 id="math-game-title">数学挑战</h2>
+            <div class="farm-header">
+                <button class="btn-back-map" id="btn-math-game-back">←</button>
+                <span class="farm-title" id="math-game-title">🌻 芽芽的花园</span>
+                <span class="farm-score" id="farm-score">0/10</span>
             </div>
-            <div class="math-game-area">
-                <div class="math-progress-bar">
-                    <div class="math-progress-fill" id="math-progress-fill"></div>
+            <!-- 农场场景 -->
+            <div class="farm-scene" id="farm-scene">
+                <div class="farm-sky">
+                    <span class="farm-sun">🌞</span>
+                    <span class="farm-cloud fc1">☁️</span>
+                    <span class="farm-cloud fc2">☁️</span>
                 </div>
-                <div class="math-stars" id="math-stars"></div>
-                <div class="math-question-card" id="math-question-card">
-                    <div class="math-question-text" id="math-question-text"></div>
+                <div class="farm-ground">
+                    <div class="farm-plots" id="farm-plots"></div>
                 </div>
-                <div class="math-choices" id="math-choices"></div>
             </div>
+            <!-- 题目区 -->
+            <div class="farm-question-area">
+                <div class="farm-npc">🐱</div>
+                <div class="farm-bubble" id="math-question-card">
+                    <span id="math-question-text">准备好了吗？</span>
+                </div>
+            </div>
+            <div class="math-choices" id="math-choices"></div>
         </div>
 
         <!-- 数学：结果弹窗 -->

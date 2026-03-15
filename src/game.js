@@ -1739,62 +1739,52 @@ class AdventureGame {
         this._mathIndex = 0;
         this._mathCorrect = 0;
 
-        // 随机选一个游戏主题
-        const themes = [
-            { name: '公主城堡', icon: '👑', bg: '#FFF0F5',
-              items: ['🏰','🗼','👗','💎','👠','🪞','🦄','💐','🎀','👑'],
-              verb: '收集到公主宝物', scene: '帮公主建造城堡！' },
-            { name: '花园采集', icon: '🌸', bg: '#F0FFF0',
-              items: ['🌸','🌷','🌹','🌻','🌺','🌼','🍀','🌿','🦋','🐝'],
-              verb: '采到一朵花', scene: '帮美乐蒂采花装扮花园！' },
-            { name: '甜点厨房', icon: '🧁', bg: '#FFF8F0',
-              items: ['🧁','🍰','🍪','🍩','🎂','🍬','🍭','🍫','🍮','🧋'],
-              verb: '做好一个甜点', scene: '芽芽的甜点厨房开张啦！' },
-            { name: '星星拼图', icon: '🧩', bg: '#F0F0FF',
-              items: ['⭐','⭐','⭐','⭐','⭐','⭐','⭐','⭐','⭐','⭐'],
-              verb: '点亮一颗星星', scene: '答对题目点亮星空！' },
+        // 农场主题
+        const farmThemes = [
+            { name: '芽芽的花园', npc: '🐱', verb: '种一朵花',
+              items: ['🌸','🌷','🌹','🌻','🌺','🌼','🍀','🌿','🦋','🌱'],
+              scene: '帮小猫咪把花园种满花吧！' },
+            { name: '甜点农场', npc: '🐰', verb: '收获一个甜点',
+              items: ['🍓','🍰','🧁','🍪','🍩','🎂','🍬','🍭','🍫','🧋'],
+              scene: '帮小兔子收获甜点吧！' },
+            { name: '动物乐园', npc: '🐶', verb: '迎来一位新朋友',
+              items: ['🐥','🐰','🐱','🐼','🦊','🐨','🦄','🐸','🐝','🦋'],
+              scene: '答对题目邀请小动物来乐园！' },
+            { name: '公主花房', npc: '👸', verb: '收集一颗宝石',
+              items: ['💎','👑','🌸','✨','🎀','💐','👗','🪞','🦄','⭐'],
+              scene: '帮公主装扮她的花房！' },
         ];
-        this._mathTheme = themes[Math.floor(Math.random() * themes.length)];
+        this._mathTheme = farmThemes[Math.floor(Math.random() * farmThemes.length)];
 
         document.getElementById('math-game-title').textContent =
-            `${this._mathTheme.icon} ${unit.name} · ${this._mathTheme.name}`;
+            `${this._mathTheme.name}`;
+        document.querySelector('.farm-npc').textContent = this._mathTheme.npc;
+
+        // 初始化农场地块
+        const plots = document.getElementById('farm-plots');
+        plots.innerHTML = '';
+        for (let i = 0; i < 10; i++) {
+            const plot = document.createElement('div');
+            plot.className = 'farm-plot empty';
+            plot.id = `plot-${i}`;
+            plots.appendChild(plot);
+        }
+
+        document.getElementById('farm-score').textContent = `0/10`;
         this.showScreen('math-game-screen');
-        this.speakLater(`${this._mathTheme.scene} 一共10道题，答对就能${this._mathTheme.verb}！`, 300);
+        this.speakLater(`${this._mathTheme.scene} 答对一道题就能${this._mathTheme.verb}！`, 300);
         this.showMathQuestion();
     }
 
     showMathQuestion() {
         const q = this._mathQuestions[this._mathIndex];
-        const total = this._mathQuestions.length;
-        const idx = this._mathIndex;
-        const theme = this._mathTheme;
 
-        // 进度条
-        document.getElementById('math-progress-fill').style.width =
-            `${(idx / total) * 100}%`;
-
-        // 采集物展示（答对的显示，未答的灰色）
-        const stars = document.getElementById('math-stars');
-        let itemsHtml = '';
-        for (let i = 0; i < total; i++) {
-            if (i < this._mathCorrect) {
-                itemsHtml += `<span class="math-item-got">${theme.items[i]}</span>`;
-            } else {
-                itemsHtml += `<span class="math-item-empty">○</span>`;
-            }
-        }
-        stars.innerHTML = itemsHtml;
-
-        // 题目卡片带主题背景
-        const card = document.getElementById('math-question-card');
-        card.style.background = theme.bg;
-
+        document.getElementById('farm-score').textContent =
+            `${this._mathCorrect}/10`;
         document.getElementById('math-question-text').textContent = q.question;
 
-        // 选项：用主题色按钮
         const choicesEl = document.getElementById('math-choices');
         choicesEl.innerHTML = '';
-
         const colors = ['#FFD1DC', '#D4F1F9', '#FFF3CD', '#E8DAEF'];
         q.choices.forEach((choice, i) => {
             const btn = document.createElement('button');
@@ -1821,6 +1811,13 @@ class AdventureGame {
         });
 
         if (isCorrect) {
+            // 在农场地块上种东西
+            const plot = document.getElementById(`plot-${this._mathCorrect}`);
+            if (plot) {
+                plot.classList.remove('empty');
+                plot.classList.add('grown');
+                plot.textContent = theme.items[this._mathCorrect];
+            }
             this._mathCorrect++;
             btn.classList.add('correct');
             this.playSound('correct');
@@ -1831,18 +1828,7 @@ class AdventureGame {
             this.speak('没关系，看看正确答案');
         }
 
-        // 更新采集物
-        const total = this._mathQuestions.length;
-        const stars = document.getElementById('math-stars');
-        let itemsHtml = '';
-        for (let i = 0; i < total; i++) {
-            if (i < this._mathCorrect) {
-                itemsHtml += `<span class="math-item-got">${theme.items[i]}</span>`;
-            } else {
-                itemsHtml += `<span class="math-item-empty">○</span>`;
-            }
-        }
-        stars.innerHTML = itemsHtml;
+        document.getElementById('farm-score').textContent = `${this._mathCorrect}/10`;
 
         setTimeout(() => {
             this._mathIndex++;
@@ -1878,12 +1864,12 @@ class AdventureGame {
         }
 
         const theme = this._mathTheme;
-        const collected = theme.items.slice(0, correct).join('');
+        const collected = theme.items.slice(0, correct).join(' ');
 
         document.getElementById('math-result-medal').textContent = medal;
         document.getElementById('math-result-title').textContent = title;
         document.getElementById('math-result-score').innerHTML =
-            `答对 ${correct}/${total} 题<br><span style="font-size:1.5rem;letter-spacing:3px">${collected}</span>`;
+            `答对 ${correct}/${total} 题<br><span style="font-size:1.6rem;letter-spacing:2px">${collected}</span>`;
         document.getElementById('math-result-overlay').style.display = 'flex';
         document.getElementById('math-progress-fill').style.width = '100%';
 
